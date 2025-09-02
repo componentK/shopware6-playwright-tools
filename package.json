@@ -1,0 +1,29 @@
+{
+  "name": "@componentk/playwright-tools",
+  "version": "1.0.0",
+  "description": "Shared Playwright testing utilities for Shopware plugins",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "uuid:generate": "node src/uuid-generator.js"
+  },
+  "keywords": [
+    "playwright",
+    "shopware6",
+    "testing",
+    "utilities"
+  ],
+  "author": "ComponentK OÜ",
+  "license": "MIT",
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "mysql2": "^3.6.0",
+    "typescript": "^5.0.0",
+    "uuid": "^9.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "src/fixtures/variables.json"
+  ]
+}

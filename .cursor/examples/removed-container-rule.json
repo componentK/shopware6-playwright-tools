@@ -1,0 +1,51 @@
+{
+  "id": "0197756660d9740db719d1446a308abd",
+  "name": "API: on remove main",
+  "priority": 5,
+  "conditions": [
+    {
+      "id": "0197756661147655a40adc0b3b672739",
+      "type": "orContainer",
+      "ruleId": "0197756660d9740db719d1446a308abd",
+      "value": {},
+      "position": 0,
+      "children": [
+        {
+          "id": "01977566612b7ef5811547d7203c1c03",
+          "type": "andContainer",
+          "ruleId": "0197756660d9740db719d1446a308abd",
+          "parentId": "0197756661147655a40adc0b3b672739",
+          "value": {},
+          "position": 0,
+          "children": [
+            {
+              "id": "01977566cf9c70cd9bfb231c63e3a6e7",
+              "type": "ckRemovedLineItemContainer",
+              "ruleId": "0197756660d9740db719d1446a308abd",
+              "parentId": "01977566612b7ef5811547d7203c1c03",
+              "value": {
+                "type": "product"
+              },
+              "position": 0,
+              "children": [
+                {
+                  "id": "01977566cf9a724faa2ab8bbd951e617",
+                  "type": "cartLineItem",
+                  "ruleId": "0197756660d9740db719d1446a308abd",
+                  "parentId": "01977566612b7ef5811547d7203c1c03",
+                  "value": {
+                    "operator": "=",
+                    "identifiers": [
+                      "{{catalog_product_main_id}}"
+                    ]
+                  },
+                  "position": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

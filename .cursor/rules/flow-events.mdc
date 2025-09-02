@@ -1,0 +1,11 @@
+---
+globs: flow.json,*.spec.ts
+alwaysApply: false
+---
+
+### These are all the events currently available
+
+Use terminal command to retrieve a fresh set of events via admin API:
+```shell
+shopware-cli project admin-api GET _info/events.json
+```

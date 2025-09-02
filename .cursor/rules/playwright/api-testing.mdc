@@ -1,0 +1,38 @@
+---
+description: When working with API tests in Shopware 6 plugins
+alwaysApply: false
+---
+# Shopware 6 API Testing Standards
+
+## Test Structure
+- Use `test.describe` for test suites
+- Configure serial execution with `test.describe.configure({ mode: 'serial' })`
+- Each test should be independent and clean up after itself
+- Use fixtures for common API clients (`adminApi`, `storefrontApi`)
+
+## API Testing
+- Use `AdminApi` for admin operations (rules, flows, customers)
+- Use `StorefrontApi` for customer-facing operations (login, cart, recovery)
+- Always check response status codes
+- Handle authentication properly (admin tokens, storefront context tokens)
+- Use unique Rule and Flow names when creating data fixtures for tests
+- API Naming: Prefix test entities with "API-${abbreviatedPluginName}: " (e.g., "API-AFU: example rule"). AFU here is Advanced Flow Utilities.
+- **Parallel Safety**: Avoid fixture conflicts when running tests in parallel
+
+## Test Data Management
+- Use fixed UUIDs for test entities to ensure consistency
+- UUID's in Shopware are 32 character strings without hyphens
+- Reference ./uuid-generation.mdc for generating new ones
+- Copy existing rule/flow.json payloads, and do not modify without permission "keys" in the payload. Only change values.
+
+## Test Execution
+- Run with: `pnpm run e2e:api`
+- Check console output for specific error details
+
+## Folder structure
+
+Tests inside these folders have specific ways of testing Rules & Actions.
+
+- **`e:cart-loaded`**: Flow actions are triggered by loading the cart. Tests for this event should **not** add items to the cart. The test should make a `GET` request to `/checkout/cart`.
+
+- **`e:item-added`**: Flow actions are triggered by adding an item to the cart. Tests for this event **must** add an item to the cart to trigger the action. The test should make a `POST` request to `/checkout/cart/line-item`.

@@ -1,0 +1,53 @@
+{
+  "id": "019732bd142e74c3b916a1ee2c1e2f73",
+  "name": "API: No Action items in cart",
+  "priority": 5,
+  "moduleTypes": {
+    "types": [
+      "flow"
+    ]
+  },
+  "conditions": [
+    {
+      "id": "019732bd143975ac808c45d2ba6ebf20",
+      "type": "orContainer",
+      "ruleId": "019732bd142e74c3b916a1ee2c1e2f73",
+      "value": {},
+      "position": 0,
+      "children": [
+        {
+          "id": "019732bd143b769fb49c1e400e51738d",
+          "type": "andContainer",
+          "ruleId": "019732bd142e74c3b916a1ee2c1e2f73",
+          "parentId": "019732bd143975ac808c45d2ba6ebf20",
+          "value": {},
+          "position": 0,
+          "children": [
+            {
+              "id": "019732bd4fb9729a8357491699aff8d1",
+              "type": "allLineItemsContainer",
+              "ruleId": "019732bd142e74c3b916a1ee2c1e2f73",
+              "parentId": "019732bd143b769fb49c1e400e51738d",
+              "value": {
+                "type": "product"
+              },
+              "position": 0,
+              "children": [
+                {
+                  "id": "019732bd4fb878c888c2cef5de9e3798",
+                  "type": "ckHasActionAddedCartItem",
+                  "ruleId": "019732bd142e74c3b916a1ee2c1e2f73",
+                  "parentId": "019732bd143b769fb49c1e400e51738d",
+                  "value": {
+                    "hasActionAddedItem": false
+                  },
+                  "position": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

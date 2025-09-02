@@ -1,0 +1,16 @@
+{
+  "catalogProductProps": "c7bca22753c84d08b6178a50052b4146",
+  "catalogProductAdvPricesId": "11dc680240b04f469ccba354cbf0b967",
+  "catalogProductVariant": "43a23e0c03bf4ceabc6055a2185faa87",
+  "catalogProductMainId": "2a88d9b59d474c7e869d8071649be43c",
+  "catalogCategoryMen": "2185182cbbd4462ea844abeb2a438b33",
+  "catalogProductFreeShip": "3ac014f329884b57a2cce5a29f34779c",
+  "catalogProductDisabled": "1901dc5e888f4b1ea4168c2c5f005540",
+  "customerMainId": "6c97534c2c0747f39e8751e43cb2b013",
+  "customerGrpDefaultId": "cfbd5018d38d41d8adca10d94fc8bdd6",
+  "swAdmin": "admin",
+  "swPass": "shopware",
+  "swClientId": "administration",
+  "userPass": "shopware",
+  "userEmail": "test@example.com"
+}

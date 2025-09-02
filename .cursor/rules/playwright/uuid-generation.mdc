@@ -1,0 +1,42 @@
+---
+description: When creating new UUIDs for API tests
+alwaysApply: false
+---
+## UUID Generation for Test Data
+
+When converting Postman collections to Playwright tests, you'll often need unique Shopware-compatible IDs for rules, flows, and conditions. Since AI assistants cannot generate truly unique UUIDs, use the provided UUID generator script.
+
+### UUID Generator Script
+
+**Location**: search project for package.json with script called "uuid:generate"
+
+**Purpose**: Generates Shopware-compatible UUIDs (32-character hex strings without hyphens) for use in Playwright tests.
+
+**Usage**:
+```bash
+cd tests
+# Generate default 15 UUIDs
+pnpm run uuid:generate
+
+# Generate specific number of UUIDs
+pnpm run uuid:generate -- -n 20
+
+# Direct script execution
+node .cursor/uuid-generator.js -n 10
+```
+
+**When to Use**:
+- Creating new Playwright test files from Postman collections
+- Need unique IDs for rules, flows, conditions, or other entities
+- Want to ensure test data isolation
+- Converting tests that require static, predictable IDs
+
+**Example Output**:
+```
+Generating 15 Shopware-compatible UUIDs:
+
+1. 0198b4274dd476f288a8d00d59579e79
+2. 0198bed341ba7c249f097546d9800f12
+3. 0198becd251a728b84f5397b19b04f3c
+...
+```

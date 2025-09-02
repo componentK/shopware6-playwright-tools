@@ -1,0 +1,11 @@
+---
+globs: flow.json,*.spec.ts
+alwaysApply: false
+---
+
+### These are all the flow actions currently available
+
+To retrieve a fresh set of flow actions an admin API calls was needed user terminal command:
+```shell
+shopware-cli project admin-api GET _info/flow-actions.json
+```

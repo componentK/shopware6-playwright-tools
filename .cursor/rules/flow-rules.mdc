@@ -1,0 +1,14 @@
+---
+globs: rule.json,*.spec.ts
+alwaysApply: false
+---
+
+There are 4 types of rule containers:
+
+The `rc:` folder name is for specifying the rule container used:
+- `rc:changed`: For tests using `ckChangedLineItemContainer`.
+- `rc:removed`: For tests using `ckRemovedLineItemContainer`.
+- `rc:all`: For tests using `allLineItemsContainer`.
+- `rc:any`: For tests that do not use a specific container wrapper.
+
+When creating rule.json you can reference the examples located ../examples/*.json

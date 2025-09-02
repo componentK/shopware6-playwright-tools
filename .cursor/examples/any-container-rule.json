@@ -1,0 +1,33 @@
+{
+  "id": "01971c07dd2074d591d14b4996e37769",
+  "name": "All Valid Rule",
+  "priority": 5,
+  "conditions": [
+    {
+      "id": "01971c07dd627763955278cf72ecbaad",
+      "type": "orContainer",
+      "ruleId": "01971c07dd2074d591d14b4996e37769",
+      "value": {},
+      "position": 0,
+      "children": [
+        {
+          "id": "01971c07dd847703b4a5255763c9e0a4",
+          "type": "andContainer",
+          "ruleId": "01971c07dd2074d591d14b4996e37769",
+          "parentId": "01971c07dd627763955278cf72ecbaad",
+          "value": {},
+          "position": 0,
+          "children": [
+            {
+              "id": "01971c07dd967fdb80f834c2495a3205",
+              "type": "alwaysValid",
+              "ruleId": "01971c07dd2074d591d14b4996e37769",
+              "parentId": "01971c07dd847703b4a5255763c9e0a4",
+              "position": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

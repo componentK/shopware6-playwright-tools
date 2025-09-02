@@ -1,0 +1,51 @@
+{
+  "id": "019774ab6c607ab480dbedf50286854d",
+  "name": "API: OnChange promo",
+  "priority": 5,
+  "conditions": [
+    {
+      "id": "019774ab6c6b7a5ebca1ccc165f4a84b",
+      "type": "orContainer",
+      "ruleId": "019774ab6c607ab480dbedf50286854d",
+      "value": {},
+      "position": 0,
+      "children": [
+        {
+          "id": "019774ab6c6c7fddb3bda0b73a6e910e",
+          "type": "andContainer",
+          "ruleId": "019774ab6c607ab480dbedf50286854d",
+          "parentId": "019774ab6c6b7a5ebca1ccc165f4a84b",
+          "value": {},
+          "position": 0,
+          "children": [
+            {
+              "id": "019774ac03317baa9e62d804d7bed333",
+              "type": "ckChangedLineItemContainer",
+              "ruleId": "019774ab6c607ab480dbedf50286854d",
+              "parentId": "019774ab6c6c7fddb3bda0b73a6e910e",
+              "value": {
+                "type": "promotion"
+              },
+              "position": 0,
+              "children": [
+                {
+                  "id": "019774ac03307f749bbb27b815f416ad",
+                  "type": "promotionLineItem",
+                  "ruleId": "019774ab6c607ab480dbedf50286854d",
+                  "parentId": "019774ab6c6c7fddb3bda0b73a6e910e",
+                  "value": {
+                    "operator": "=",
+                    "identifiers": [
+                      "{{tmp_promo_id}}"
+                    ]
+                  },
+                  "position": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

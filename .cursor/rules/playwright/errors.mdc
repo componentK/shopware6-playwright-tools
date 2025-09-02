@@ -1,0 +1,89 @@
+---
+description: When errors are encountered during playwright test runs
+alwaysApply: false
+---
+## Common Errors and Solutions
+
+### "InsertCommand (Got: UpdateCommand)" Error
+
+**Error Message:**
+```
+Expected command for "rule" to be "InsertCommand". (Got: UpdateCommand)
+```
+
+**What It Means:**
+This error occurs when Shopware's API tries to create a new entity but encounters an existing entity with the same ID. The API interprets the request as an update operation instead of an insert operation.
+
+**When It Happens:**
+- Previous test runs didn't complete cleanup properly
+- Tests were interrupted before cleanup could run
+- The same IDs are reused across multiple test files
+- Database contains leftover test data from failed runs
+
+**How to Fix:**
+
+1. **Identify Dangling Test Data:**
+   ```shell
+   mysql shopware -e "SELECT id, name, created_at FROM flow WHERE name LIKE 'API: %';SELECT id, name, created_at FROM rule WHERE name LIKE 'API: %';"
+   ```
+
+2. **Fix Test Cleanup Routines:**
+   - Review the identified "API: ..." flows and rules
+   - Find the corresponding test files that created them
+   - Ensure those tests have proper cleanup routines
+   - Fix any missing or incomplete cleanup code
+
+3. **Clean Database After Test Fixes are applied:**
+   ```shell
+   mysql shopware -e "DELETE FROM flow WHERE name LIKE 'API:%';DELETE FROM rule WHERE name LIKE 'API:%'"
+   ```
+
+4. **Prevention Strategies:**
+   - Always run @api tagged tests sequentially with single worker (`--workers=1`)
+   - Ensure test cleanup runs even when tests fail
+   - Use unique test IDs for different test scenarios
+   - Consider using random UUIDs for development testing
+
+### Rule Payload Constraint Violation
+
+**Error Message:**
+A `400 Bad Request` error where the response detail contains a path to the invalid property.
+```json
+{
+    "errors": [
+        {
+            "status": "400",
+            "code": "FRAMEWORK__WRITE_CONSTRAINT_VIOLATION",
+            "detail": "This value is not valid.",
+            "source": {
+                "pointer": "/0/conditions/0/children/0/children/0/value/operator"
+            },
+            "meta": {
+                "parameters": {
+                    "{{ value }}": "\"contains\"",
+                    "{{ choices }}": "\"=\", \"!=\", \"empty\""
+                }
+            }
+        }
+    ]
+}
+```
+
+**What It Means:**
+This error occurs when creating or updating a rule with a `rule.json` fixture that contains an invalid value for a specific field, such as `operator`. The API rejects the payload because it violates a defined constraint.
+
+**How to Fix:**
+1.  **Read the Error Carefully**: The `source.pointer` in the JSON response points directly to the field that is incorrect (`.../value/operator` in this example).
+2.  **Check Allowed Values**: The `meta.parameters.{{ choices }}` field lists the only valid values for the given property.
+3.  **Correct `rule.json`**: Update the value at the specified path in your `rule.json` file to one of the allowed choices.
+
+### Test Fails by Returning Empty or New Cart
+
+**Symptom:**
+A test fails on an assertion checking the number of line items in the cart. For example, it expects 1 or 2 items, but receives 0.
+
+**What It Means:**
+This almost always means the `sw-context-token` was not passed correctly in the headers of the final API call. When the Storefront API does not receive a valid context token, it creates a new, empty cart instead of loading the existing one.
+
+**How to Fix:**
+- **Check for Typos**: Carefully inspect the headers of the failing API request in your `.spec.ts` file. A common typo is an extra dash, like `'sw--context-token'`. It should be `'sw-context-token'`.
