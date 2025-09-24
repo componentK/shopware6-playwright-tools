@@ -8,22 +8,29 @@ class AdminApi {
     this.request = request;
   }
 
-  private async _request(method: 'post' | 'delete' | 'patch', url: string, payload?: unknown, auth = true): Promise<any> {
+  private async _request(method: 'post' | 'delete' | 'patch' | 'get', url: string, payload?: unknown, options: { auth?: boolean; multipart?: Record<string, any> } = {}): Promise<any> {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       Accept: 'application/json',
     };
 
-    if (auth) {
+    const requestOptions: any = { headers };
+
+    // Handle multipart data
+    if (options.multipart) {
+      requestOptions.multipart = options.multipart;
+      // Don't set Content-Type for multipart - let Playwright handle it
+    } else {
+      headers['Content-Type'] = 'application/json';
+      if (payload) {
+        requestOptions.data = payload;
+      }
+    }
+
+    if (options.auth !== false) {
       headers.Authorization = `Bearer ${await this.getToken()}`;
     }
 
-    const options: any = { headers };
-    if (payload) {
-      options.data = payload;
-    }
-
-    const resp = await this.request[method](`/api${url}`, options);
+    const resp = await this.request[method](`/api${url}`, requestOptions);
 
     if (!resp.ok()) {
       let body: string;
@@ -49,7 +56,7 @@ class AdminApi {
       password,
     };
 
-    const resp = await this._request('post', '/oauth/token', payload, false);
+    const resp = await this._request('post', '/oauth/token', payload, { auth: false });
     const data = await resp.json();
 
     if (!data || !data.access_token) {
@@ -60,20 +67,24 @@ class AdminApi {
     return data.access_token;
   }
 
-  async post(url: string, payload: unknown): Promise<any> {
-    return await this._request('post', url, payload);
+  async post(url: string, payload: unknown, options: { multipart?: Record<string, any> } = {}): Promise<any> {
+    return await this._request('post', url, payload, { ...options, auth: true });
   }
 
-  async patch(url: string, payload: unknown): Promise<any> {
-    return await this._request('patch', url, payload);
+  async patch(url: string, payload: unknown, options: { multipart?: Record<string, any> } = {}): Promise<any> {
+    return await this._request('patch', url, payload, { ...options, auth: true });
   }
 
   async del(url: string): Promise<any> {
-    return await this._request('delete', url);
+    return await this._request('delete', url, undefined, { auth: true });
   }
 
   async sync(payload: unknown): Promise<void> {
     await this.post('/_action/sync', payload);
+  }
+
+  async get(url: string): Promise<any> {
+    return await this._request('get', url, undefined, { auth: true });
   }
 }
 

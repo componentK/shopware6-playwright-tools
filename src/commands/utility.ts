@@ -17,7 +17,7 @@ class Utility {
   }
 
   async closeDevToolbar(): Promise<void> {
-    await this.page.getByRole('button', { name: 'Close Toolbar' }).click({ timeout: 1000 }).catch(() => {});
+    await this.page.getByRole('button', { name: 'Close Toolbar' }).click({ timeout: 3000 }).catch(() => {});
   }
 }
 

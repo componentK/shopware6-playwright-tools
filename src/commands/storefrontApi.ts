@@ -6,28 +6,31 @@ class StorefrontApi {
 
   constructor(request: APIRequestContext) {
     this.request = request;
-    // Default access key - can be overridden
-    this.accessKey = 'SWSCTGVQEG8XDTBUV3BZQLY2QG';
+    this.accessKey = '';
   }
 
   setAccessKey(accessKey: string) {
     this.accessKey = accessKey;
   }
 
-  private async _request(method: 'post' | 'get' | 'delete' | 'patch', url: string, payload?: unknown, options: { headers?: Record<string, string> } = {}): Promise<any> {
+  private async _request(method: 'post' | 'get' | 'delete' | 'patch', url: string, payload?: unknown, options: { headers?: Record<string, string>; multipart?: Record<string, any> } = {}): Promise<any> {
     const headers: Record<string, string> = {
       'sw-access-key': this.accessKey,
       'Accept': 'application/json',
       ...options.headers
     };
 
-    if (method === 'post' || method === 'patch' || (method === 'delete' && payload)) {
-      headers['Content-Type'] = 'application/json';
-    }
-
     const requestOptions: any = { headers };
-    if (payload) {
-      requestOptions.data = payload;
+
+    // Handle multipart data
+    if (options.multipart) {
+      requestOptions.multipart = options.multipart;
+      // Don't set Content-Type for multipart - let Playwright handle it
+    } else if (method === 'post' || method === 'patch' || (method === 'delete' && payload)) {
+      headers['Content-Type'] = 'application/json';
+      if (payload) {
+        requestOptions.data = payload;
+      }
     }
 
     const resp = await this.request[method](`/store-api${url}`, requestOptions);
@@ -45,7 +48,7 @@ class StorefrontApi {
     return resp;
   }
 
-  async post(endpoint: string, payload: unknown, options: { headers?: Record<string, string> } = {}): Promise<any> {
+  async post(endpoint: string, payload: unknown, options: { headers?: Record<string, string>; multipart?: Record<string, any> } = {}): Promise<any> {
     return await this._request('post', endpoint, payload, options);
   }
 
@@ -57,7 +60,7 @@ class StorefrontApi {
     return await this._request('delete', endpoint, payload, options);
   }
 
-  async patch(endpoint: string, payload: unknown, options: { headers?: Record<string, string> } = {}): Promise<any> {
+  async patch(endpoint: string, payload: unknown, options: { headers?: Record<string, string>; multipart?: Record<string, any> } = {}): Promise<any> {
     return await this._request('patch', endpoint, payload, options);
   }
 }
