@@ -1,4 +1,9 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
+
+export interface StorefrontApiOptions {
+  headers?: Record<string, string>;
+  multipart?: Record<string, any>;
+}
 
 class StorefrontApi {
   private readonly request: APIRequestContext;
@@ -9,11 +14,16 @@ class StorefrontApi {
     this.accessKey = '';
   }
 
-  setAccessKey(accessKey: string) {
+  setAccessKey(accessKey: string): void {
     this.accessKey = accessKey;
   }
 
-  private async _request(method: 'post' | 'get' | 'delete' | 'patch', url: string, payload?: unknown, options: { headers?: Record<string, string>; multipart?: Record<string, any> } = {}): Promise<any> {
+  private async _request(
+    method: 'post' | 'get' | 'delete' | 'patch', 
+    url: string, 
+    payload?: unknown, 
+    options: StorefrontApiOptions = {}
+  ): Promise<APIResponse> {
     const headers: Record<string, string> = {
       'sw-access-key': this.accessKey,
       'Accept': 'application/json',
@@ -48,19 +58,19 @@ class StorefrontApi {
     return resp;
   }
 
-  async post(endpoint: string, payload: unknown, options: { headers?: Record<string, string>; multipart?: Record<string, any> } = {}): Promise<any> {
+  async post(endpoint: string, payload?: unknown, options: StorefrontApiOptions = {}): Promise<APIResponse> {
     return await this._request('post', endpoint, payload, options);
   }
 
-  async get(endpoint: string, options: { headers?: Record<string, string> } = {}): Promise<any> {
+  async get(endpoint: string, options: StorefrontApiOptions = {}): Promise<APIResponse> {
     return await this._request('get', endpoint, undefined, options);
   }
 
-  async del(endpoint: string, payload?: unknown, options: { headers?: Record<string, string> } = {}): Promise<any> {
+  async del(endpoint: string, payload?: unknown, options: StorefrontApiOptions = {}): Promise<APIResponse> {
     return await this._request('delete', endpoint, payload, options);
   }
 
-  async patch(endpoint: string, payload: unknown, options: { headers?: Record<string, string>; multipart?: Record<string, any> } = {}): Promise<any> {
+  async patch(endpoint: string, payload?: unknown, options: StorefrontApiOptions = {}): Promise<APIResponse> {
     return await this._request('patch', endpoint, payload, options);
   }
 }

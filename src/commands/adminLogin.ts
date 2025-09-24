@@ -17,7 +17,7 @@ class AdminLogin {
     await this.page.goto('/admin');
   }
 
-  async login(username: string, password: string): Promise<void> {
+  async login(username: string = 'admin', password: string = 'shopware'): Promise<void> {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
     await this.submitButton.click();

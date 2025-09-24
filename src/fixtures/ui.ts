@@ -1,11 +1,11 @@
-import { test as base, expect } from '@playwright/test'
+import { test as base, expect, type Page } from '@playwright/test'
 import { AdminLogin } from '../commands/adminLogin.js'
 import { Utility } from '../commands/utility.js'
 import { AdminApi } from '../commands/adminApi.js'
 import { StorefrontApi } from '../commands/storefrontApi.js'
 
 export type TestFixtures = {
-  page: any
+  page: Page
   adminLogin: AdminLogin
   utility: Utility
   adminApi: AdminApi

@@ -23,3 +23,5 @@ export { default as variables } from './fixtures/variables.json' with { type: "j
 // Types
 export type { TestFixtures, SalesChannel } from './fixtures/ui.js';
 export type { MyFixtures } from './fixtures/db.js';
+export type { AdminApiOptions } from './commands/adminApi.js';
+export type { StorefrontApiOptions } from './commands/storefrontApi.js';

@@ -1,4 +1,10 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
+
+export interface AdminApiOptions {
+  auth?: boolean;
+  multipart?: Record<string, any>;
+  headers?: Record<string, string>;
+}
 
 class AdminApi {
   private readonly request: APIRequestContext;
@@ -8,7 +14,12 @@ class AdminApi {
     this.request = request;
   }
 
-  private async _request(method: 'post' | 'delete' | 'patch' | 'get', url: string, payload?: unknown, options: { auth?: boolean; multipart?: Record<string, any> } = {}): Promise<any> {
+  private async _request(
+    method: 'post' | 'delete' | 'patch' | 'get', 
+    url: string, 
+    payload?: unknown, 
+    options: AdminApiOptions = {}
+  ): Promise<APIResponse> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
     };
@@ -67,15 +78,15 @@ class AdminApi {
     return data.access_token;
   }
 
-  async post(url: string, payload: unknown, options: { multipart?: Record<string, any> } = {}): Promise<any> {
+  async post(url: string, payload?: unknown, options: AdminApiOptions = {}): Promise<APIResponse> {
     return await this._request('post', url, payload, { ...options, auth: true });
   }
 
-  async patch(url: string, payload: unknown, options: { multipart?: Record<string, any> } = {}): Promise<any> {
+  async patch(url: string, payload?: unknown, options: AdminApiOptions = {}): Promise<APIResponse> {
     return await this._request('patch', url, payload, { ...options, auth: true });
   }
 
-  async del(url: string): Promise<any> {
+  async del(url: string): Promise<APIResponse> {
     return await this._request('delete', url, undefined, { auth: true });
   }
 
@@ -83,7 +94,7 @@ class AdminApi {
     await this.post('/_action/sync', payload);
   }
 
-  async get(url: string): Promise<any> {
+  async get(url: string): Promise<APIResponse> {
     return await this._request('get', url, undefined, { auth: true });
   }
 }

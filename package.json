@@ -1,33 +1,56 @@
 {
   "name": "@componentk/shopware6-playwright-tools",
   "version": "1.0.0",
-  "description": "Playwright testing utilities for Shopware plugins.",
+  "description": "Playwright testing utilities for Shopware 6 plugins with API testing, admin automation, and database fixtures.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "uuid:generate": "node .cursor/uuid-generator.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "playwright",
     "shopware6",
     "testing",
-    "utilities"
+    "utilities",
+    "api-testing",
+    "e2e-testing",
+    "automation"
   ],
   "author": {
     "name": "ComponentK OÜ",
     "url": "http://componentk.eu"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/componentk/shopware6-playwright-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/componentk/shopware6-playwright-tools/issues"
+  },
+  "homepage": "https://github.com/componentk/shopware6-playwright-tools#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "@playwright/test": "^1.40.0",
     "mysql2": "^3.6.0",
     "typescript": "^5.0.0",
     "uuid": "^9.0.0"
   },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
   "files": [
     "dist/**/*",
-    "src/fixtures/variables.json"
-  ]
+    "src/fixtures/variables.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
