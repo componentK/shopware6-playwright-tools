@@ -377,7 +377,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- 📖 [Documentation](https://github.com/componentk/ckou-playwright-tools#readme)
-- 🐛 [Issue Tracker](https://github.com/componentk/ckou-playwright-tools/issues)
-- 💬 [Discussions](https://github.com/componentk/ckou-playwright-tools/discussions)
+- 📖 [Documentation](https://github.com/componentK/shopware6-playwright-tools#readme)
+- 🐛 [Issue Tracker](https://github.com/componentK/shopware6-playwright-tools/issues)
+- 💬 [Discussions](https://github.com/componentK/shopware6-playwright-tools/discussions)
 
