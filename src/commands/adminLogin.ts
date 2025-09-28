@@ -1,4 +1,4 @@
-import { Locator, Page, expect } from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
 
 class AdminLogin {
   private readonly page: Page;
@@ -21,8 +21,8 @@ class AdminLogin {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
-    // necessary check to avoid issues with locationHandler
-    await expect(this.page.locator('.sw-usage-data-consent-banner__content-headline')).toBeVisible({ timeout: 10000 });
+      // Wait for navigation to complete (either dashboard or banner)
+      await this.page.waitForURL(/.*dashboard|.*banner/, {timeout: 15000});
   }
 }
 

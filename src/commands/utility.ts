@@ -11,7 +11,14 @@ class Utility {
     await this.page.addLocatorHandler(
       this.page.locator('.mt-banner__close'),
       async loc => {
-        await loc.click({ timeout: 2000 });
+          try {
+              // Wait for element to be stable before clicking
+              await loc.waitFor({state: 'visible', timeout: 1000});
+              await loc.click({timeout: 2000, force: true});
+          } catch (error) {
+              // If banner is already gone or unstable, ignore the error
+              // This prevents the handler from interfering with other interactions
+          }
       }
     );
   }
