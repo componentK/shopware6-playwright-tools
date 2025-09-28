@@ -1,7 +1,5 @@
 import type {APIRequestContext, APIResponse} from '@playwright/test';
-import variables from '../fixtures/variables.json'
-
-with {type: "json"};
+import variables from '../fixtures/variables.json' with {type: "json"};
 
 export interface AdminApiOptions {
     auth?: boolean;
