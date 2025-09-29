@@ -44,17 +44,8 @@ class StorefrontApi {
     }
 
     const resp = await this.request[method](`/store-api${url}`, requestOptions);
-
-    if (!resp.ok()) {
-      let body: string;
-      try {
-        body = JSON.stringify(await resp.json());
-      } catch {
-        body = await resp.text();
-      }
-      throw new Error(`Request failed: ${resp.status()} ${body}`);
-    }
-
+    
+    // Don't throw on error responses - let tests handle status codes
     return resp;
   }
 

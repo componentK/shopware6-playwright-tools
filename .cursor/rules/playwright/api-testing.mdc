@@ -17,6 +17,7 @@ alwaysApply: false
 - Handle authentication properly (admin tokens, storefront context tokens)
 - Use unique Rule and Flow names when creating data fixtures for tests
 - API Naming: Prefix test entities with "API-${abbreviatedPluginName}: " (e.g., "API-AFU: example rule"). AFU here is Advanced Flow Utilities.
+- Develop one test at a time, and run it after modifications to make sure it work. Afterwards copy working parts to other tests.
 - **Parallel Safety**: Avoid fixture conflicts when running tests in parallel
 
 ## Test Data Management
@@ -26,7 +27,7 @@ alwaysApply: false
 - Copy existing rule/flow.json payloads, and do not modify without permission "keys" in the payload. Only change values.
 
 ## Test Execution
-- Run with: `pnpm run e2e:api`
+- Run with: `npx playwright test customer-approval.spec.ts `
 - Check console output for specific error details
 
 ## Folder structure

@@ -1,5 +1,10 @@
 ## Changelog
 
+### 1.2.0
+- Added multi-request possibility
+- Added token caching per scope
+- Fixed errors to be returned instead of thrown
+
 ### 1.1.0
 
 - Added support for user-verified token generation
