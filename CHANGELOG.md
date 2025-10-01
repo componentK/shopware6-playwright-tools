@@ -1,5 +1,10 @@
 ## Changelog
 
+### 1.3.0
+
+- Removed AdminApi multi-key storage capabilities
+- Removed unnecessary "user-verified" scope post and delete calls, use `withCredentials` instead
+
 ### 1.2.0
 - Added multi-request possibility
 - Added token caching per scope

@@ -9,7 +9,7 @@ class Utility {
 
   async closeBanner() {
     await this.page.addLocatorHandler(
-      this.page.locator('.mt-banner__close'),
+      this.page.getByRole('banner').getByRole('button', { name: 'Cancel' }),
       async loc => {
           try {
               // Wait for element to be stable before clicking

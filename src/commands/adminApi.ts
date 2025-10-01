@@ -1,6 +1,8 @@
 import type {APIRequestContext, APIResponse} from '@playwright/test';
 import variables from '../fixtures/variables.json' with {type: "json"};
 
+export type OAuthScope = 'admin' | 'user-verified' | 'write' | 'read' | string;
+
 export interface AdminApiOptions {
     auth?: boolean;
     multipart?: Record<string, any>;
@@ -9,20 +11,24 @@ export interface AdminApiOptions {
     credentials?: {
         username?: string;
         password?: string;
-        scope?: string;
+        scope?: OAuthScope;
     };
 }
 
 class AdminApi {
     private readonly request: APIRequestContext;
-    private tokens?: Map<string, string>;
+    private token?: string;
     private defaultCredentials?: {
         username?: string;
         password?: string;
-        scope?: string;
+        scope?: OAuthScope;
     };
 
-    constructor(request: APIRequestContext, defaultCredentials?: { username?: string; password?: string; scope?: string }) {
+    constructor(request: APIRequestContext, defaultCredentials?: {
+        username?: string;
+        password?: string;
+        scope?: OAuthScope
+    }) {
         this.request = request;
         this.defaultCredentials = defaultCredentials;
     }
@@ -68,18 +74,10 @@ class AdminApi {
         return this.request[method](`/api${url}`, requestOptions);
     }
 
-    async getToken(username = variables.swAdmin, password = variables.swPass, scope = 'write', refreshToken = false): Promise<string> {
-        // Initialize tokens map if not exists
-        if (!this.tokens) {
-            this.tokens = new Map();
-        }
-
-        // Create composite cache key from username, password, and scope
-        const cacheKey = `${username}:${password}:${scope}`;
-
-        // Check if we already have a token for this combination (unless forced refresh)
-        if (!refreshToken && this.tokens.has(cacheKey)) {
-            return this.tokens.get(cacheKey)!;
+    async getToken(username = variables.swAdmin, password = variables.swPass, scope: OAuthScope = 'write', refreshToken = false): Promise<string> {
+        // Check if we already have a token (unless forced refresh)
+        if (!refreshToken && this.token) {
+            return this.token;
         }
 
         const payload = {
@@ -104,62 +102,36 @@ class AdminApi {
             throw new Error('Failed to retrieve access token.');
         }
 
-        // Cache token by composite key
-        this.tokens.set(cacheKey, data.access_token);
+        // Cache token
+        this.token = data.access_token;
         return data.access_token;
     }
 
     async post(url: string, payload?: unknown, options: AdminApiOptions = {}): Promise<APIResponse> {
-        return await this._request('post', url, payload, {auth: true, ...options});
+        return this._request('post', url, payload, {auth: true, ...options});
     }
 
     async patch(url: string, payload?: unknown, options: AdminApiOptions = {}): Promise<APIResponse> {
-        return await this._request('patch', url, payload, {auth: true, ...options});
+        return this._request('patch', url, payload, {auth: true, ...options});
     }
 
     async del(url: string): Promise<APIResponse> {
-        return await this._request('delete', url, undefined, {auth: true});
+        return this._request('delete', url, undefined, {auth: true});
     }
 
-    async sync(payload: unknown): Promise<void> {
-        await this.post('/_action/sync', payload);
+    async sync(payload: unknown): Promise<APIResponse> {
+        return this.post('/_action/sync', payload);
     }
 
     async get(url: string, options: AdminApiOptions = {}): Promise<APIResponse> {
-        return await this._request('get', url, undefined, {auth: true, ...options});
-    }
-
-    /**
-     * Reserved for specific calls that require 'user-verified' Bearer scope
-     */
-    async postVerified(url: string, payload?: unknown, options: AdminApiOptions = {}): Promise<APIResponse> {
-        return await this._request('post', url, payload, {
-            credentials: {
-                scope: 'user-verified',
-            },
-            auth: true,
-            ...options
-        });
-    }
-
-    /**
-     * Reserved for specific calls that require 'user-verified' Bearer scope
-     */
-    async delVerified(url: string, options: AdminApiOptions = {}): Promise<APIResponse> {
-        return await this._request('delete', url, undefined, {
-            credentials: {
-                scope: 'user-verified',
-            },
-            auth: true,
-            ...options,
-        });
+        return this._request('get', url, undefined, {auth: true, ...options});
     }
 
     /**
      * Creates a new AdminApi instance with different default credentials.
      * Useful for testing with restricted users.
      */
-    withCredentials(username: string, password: string, scope = 'write'): AdminApi {
+    withCredentials(username: string, password: string, scope: OAuthScope = 'write'): AdminApi {
         return new AdminApi(this.request, {username, password, scope});
     }
 }
