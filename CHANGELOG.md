@@ -1,5 +1,11 @@
 ## Changelog
 
+### 1.4.0
+
+- Added Service classes to help with common CRUD API calls
+- Added email (mailcatcher & mailcatcher) listener and parser
+- Added config service to set up system_config entries
+
 ### 1.3.0
 
 - Removed AdminApi multi-key storage capabilities

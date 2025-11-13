@@ -1,7 +1,8 @@
 {
   "name": "@componentk/shopware6-playwright-tools",
-  "version": "1.3.0",
-  "description": "Playwright testing utilities for Shopware 6 plugins with API testing, admin automation, and database fixtures.",
+  "version": "1.4.0",
+  "description": "Playwright testing utilities for Shopware 6 plugins with API testing, admin automation",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -36,7 +37,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.56.1",
     "mysql2": "^3.6.0",
     "typescript": "^5.0.0",
     "uuid": "^9.0.0"
