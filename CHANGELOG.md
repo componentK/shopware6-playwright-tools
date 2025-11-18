@@ -1,5 +1,14 @@
 ## Changelog
 
+### 1.5.0
+
+- Added cleanup for cart service
+- Added product service
+- Added system_config individual setter & restore
+- Added Snippet service
+- Fixed customer service cleanup
+- Fixed flow cleanup to remove flows before rules
+
 ### 1.4.0
 
 - Added Service classes to help with common CRUD API calls

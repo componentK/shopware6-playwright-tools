@@ -28,6 +28,8 @@ export {TagService} from './services/TagService.js';
 export {FlowService} from './services/FlowService.js';
 export {EmailService} from './services/EmailService.js';
 export {ConfigService} from './services/ConfigService.js';
+export {ProductService} from './services/ProductService.js';
+export {SnippetService} from './services/SnippetService.js';
 
 // Types
 export type { TestFixtures, SalesChannel } from './fixtures/ui.js';

@@ -1,0 +1,7 @@
+---
+description: when testing UI in Shopware 6 Admin or Storefront
+alwaysApply: false
+---
+
+- after adding product to cart, make sure to check that it was added before proceeding
+- after a page transition, target a content element for visibility before proceeding to ensure the page is loaded

@@ -1,6 +1,6 @@
 {
   "name": "@componentk/shopware6-playwright-tools",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Playwright testing utilities for Shopware 6 plugins with API testing, admin automation",
   "type": "module",
   "main": "dist/index.js",

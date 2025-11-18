@@ -10,6 +10,8 @@ import {TagService} from '../services/TagService.js'
 import {FlowService} from '../services/FlowService.js'
 import {EmailService} from '../services/EmailService.js'
 import {ConfigService} from '../services/ConfigService.js'
+import {ProductService} from '../services/ProductService.js'
+import {SnippetService} from '../services/SnippetService.js'
 
 export type TestFixtures = {
     page: Page
@@ -25,6 +27,8 @@ export type TestFixtures = {
     flowService: FlowService
     emailService: EmailService
     configService: ConfigService
+    productService: ProductService
+    snippetService: SnippetService
 }
 
 export type SalesChannel = {
@@ -89,9 +93,12 @@ const test = base.extend<TestFixtures, SalesChannel>({
         await customerService.cleanup()
     },
 
-    cartService: async ({storefrontApi}, use) => {
-        const cartService = new CartService(storefrontApi)
+    cartService: async ({storefrontApi, adminApi}, use) => {
+        const cartService = new CartService(storefrontApi, adminApi)
         await use(cartService)
+
+        // Cleanup after each test
+        await cartService.cleanup()
     },
 
     orderService: async ({adminApi}, use) => {
@@ -123,6 +130,23 @@ const test = base.extend<TestFixtures, SalesChannel>({
     configService: async ({adminApi}, use) => {
         const configService = new ConfigService(adminApi)
         await use(configService)
+
+        // restore original after each test
+        await configService.restore()
+    },
+
+    productService: async ({adminApi}, use) => {
+        const productService = new ProductService(adminApi)
+        await use(productService)
+
+        await productService.cleanup()
+    },
+
+    snippetService: async ({adminApi}, use) => {
+        const snippetService = new SnippetService(adminApi)
+        await use(snippetService)
+
+        await snippetService.cleanup()
     }
 })
 

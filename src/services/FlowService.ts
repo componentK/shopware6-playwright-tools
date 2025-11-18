@@ -112,30 +112,38 @@ export class FlowService {
 
     /**
      * Clean up all flows and rules created during the test session
+     * Deletes flows first, then rules, to avoid foreign key constraint errors
      */
     async cleanup(): Promise<void> {
-        for (const flowId of this.cleanupFlows) {
-            await this.deleteFlow(flowId);
+        // Delete all flows first (they reference rules)
+        if (this.cleanupFlows.length > 0) {
+            const flowsPayload = {
+                'delete-flows': {
+                    entity: 'flow',
+                    action: 'delete',
+                    payload: this.cleanupFlows.map((id) => ({id})),
+                },
+            };
+
+            const flowsResponse = await this.adminApi.sync(flowsPayload);
+            expect([200, 204]).toContain(flowsResponse.status());
         }
+
+        // Then delete all rules
+        if (this.cleanupRules.length > 0) {
+            const rulesPayload = {
+                'delete-rules': {
+                    entity: 'rule',
+                    action: 'delete',
+                    payload: this.cleanupRules.map((id) => ({id})),
+                },
+            };
+
+            const rulesResponse = await this.adminApi.sync(rulesPayload);
+            expect([200, 204]).toContain(rulesResponse.status());
+        }
+
         this.cleanupFlows.length = 0;
-
-        for (const ruleId of this.cleanupRules) {
-            await this.deleteRule(ruleId);
-        }
         this.cleanupRules.length = 0;
-    }
-
-    /**
-     * Get the list of flows pending cleanup
-     */
-    getPendingCleanupFlows(): string[] {
-        return [...this.cleanupFlows];
-    }
-
-    /**
-     * Get the list of rules pending cleanup
-     */
-    getPendingCleanupRules(): string[] {
-        return [...this.cleanupRules];
     }
 }

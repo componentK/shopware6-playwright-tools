@@ -1,4 +1,5 @@
 import type {AdminApi} from '../commands/adminApi.js';
+import {v4 as uuidv4} from 'uuid';
 
 export interface SystemConfigEntry {
     id?: string;
@@ -8,6 +9,7 @@ export interface SystemConfigEntry {
 
 export class ConfigService {
     private readonly adminApi: AdminApi;
+    private readonly originalConfigs: Map<string, { id: string; value: any }> = new Map();
 
     constructor(adminApi: AdminApi) {
         this.adminApi = adminApi;
@@ -99,6 +101,104 @@ export class ConfigService {
             }
         }
     }
+
+    /**
+     * Set a config value, tracking the original value for restoration
+     */
+    async setConfig(key: string, value: any): Promise<void> {
+        // Search for existing config
+        const searchResponse = await this.adminApi.post('/search/system-config', {
+            filter: [{
+                type: 'equals',
+                field: 'configurationKey',
+                value: key
+            }]
+        });
+
+        let configId: string | undefined;
+        let originalValue: any = undefined;
+
+        if (searchResponse.ok()) {
+            const result = await searchResponse.json();
+            const existingConfig = result?.data?.[0];
+
+            if (existingConfig) {
+                configId = existingConfig.id;
+                originalValue = existingConfig.configurationValue;
+            }
+        }
+
+        // Check if we already have this key tracked
+        const tracked = this.originalConfigs.get(key);
+        if (tracked) {
+            // Use the tracked ID
+            configId = tracked.id;
+        } else {
+            // Not tracked yet, need to determine ID and store original
+            if (!configId) {
+                // No existing config, generate new ID
+                configId = uuidv4().replace(/-/g, '');
+            }
+            // Store original value for restoration (configId is guaranteed to be string here)
+            this.originalConfigs.set(key, {id: configId as string, value: originalValue});
+        }
+
+        // Upsert the config with new value (configId is guaranteed to be string here)
+        await this.install([{
+            id: configId as string,
+            configurationKey: key,
+            configurationValue: value
+        }]);
+    }
+
+    /**
+     * Restore all tracked configs to their original values
+     */
+    async restore(): Promise<void> {
+        if (this.originalConfigs.size === 0) {
+            return;
+        }
+
+        const restorePayload: SystemConfigEntry[] = [];
+        const deletePayload: Array<{ id: string }> = [];
+
+        for (const [key, {id, value}] of this.originalConfigs.entries()) {
+            if (value === undefined) {
+                // Original didn't exist, delete it
+                deletePayload.push({id});
+            } else {
+                // Restore original value
+                restorePayload.push({
+                    id,
+                    configurationKey: key,
+                    configurationValue: value
+                });
+            }
+        }
+
+        const syncPayload: Record<string, any> = {};
+
+        if (deletePayload.length > 0) {
+            syncPayload['delete-system-config'] = {
+                entity: 'system_config',
+                action: 'delete',
+                payload: deletePayload
+            };
+        }
+
+        if (restorePayload.length > 0) {
+            syncPayload['write-system-config'] = {
+                entity: 'system_config',
+                action: 'upsert',
+                payload: restorePayload
+            };
+        }
+
+        if (Object.keys(syncPayload).length > 0) {
+            await this.adminApi.sync(syncPayload);
+        }
+
+        // Clear tracked configs
+        this.originalConfigs.clear();
+    }
 }
-
-

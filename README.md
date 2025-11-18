@@ -7,9 +7,11 @@ Playwright testing utilities specifically designed for Shopware 6 plugins. This 
 
 ## Features
 
-- **API Testing**: Complete Admin API and Storefront API clients with authentication
+- **Service Classes**: High-level APIs for common operations (flows, customers, cart, products, config, snippets, tags,
+  orders, emails)
+- **Automatic Cleanup**: Service classes handle test isolation and cleanup automatically
+- **API Testing**: Complete Admin API and Storefront API clients with authentication (fallback for custom operations)
 - **Admin Automation**: Automated admin panel login and interaction utilities
-- **Storefront Testing**: Storefront API client with context token management
 - **Database Fixtures**: Direct database access for test data management
 - **Utility Functions**: Common testing utilities and helpers
 - **TypeScript Support**: Full TypeScript definitions included
@@ -33,8 +35,11 @@ pnpm add @componentk/shopware6-playwright-tools
 import { test, expect, variables } from '@componentk/shopware6-playwright-tools';
 
 test.describe('My Shopware Tests', () => {
-  test('API test example', async ({ adminApi, storefrontApi }) => {
-    // Your test code here
+    test('API test example', async ({customerService, flowService, cartService}) => {
+        // Use Service classes for common operations
+        const customer = await customerService.registerCustomer();
+        await flowService.createRule({name: 'Test Rule', priority: 1, conditions: []});
+        const contextToken = await cartService.createNewCart();
   });
 });
 ```
@@ -81,70 +86,294 @@ test('Typed test', async ({ adminApi, storefrontApi, page }: TestFixtures) => {
 
 ## API Reference
 
-### AdminApi
+### Service Classes (Recommended)
 
-Complete Admin API client with automatic authentication:
+**Use Service classes as your primary approach** for interacting with Shopware. They provide:
+
+- High-level, domain-specific APIs
+- Automatic cleanup and test isolation
+- Built-in error handling and validation
+- Type-safe interfaces
+- Consistent patterns across your tests
+
+Service classes handle cleanup automatically after each test, ensuring test isolation. Only use raw API
+calls (`adminApi`/`storefrontApi`) when you need to perform operations not covered by the Service classes.
+
+#### CustomerService
+
+Customer registration, login, and management:
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Customer operations', async ({customerService}) => {
+    // Register a new customer
+    const customer = await customerService.registerCustomer({
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe'
+    });
+    // Returns: { customerId, email, contextToken }
+
+    // Clone existing customer
+    const clonedId = await customerService.cloneMainCustomer({
+        email: 'clone@example.com'
+    });
+
+    // Login customer
+    const contextToken = await customerService.loginCustomer('test@example.com', 'password');
+
+    // Cleanup is automatic after test
+});
+```
+
+#### FlowService
+
+Flow Builder rule and flow management:
 
 ```typescript
 import { test, expect } from '@componentk/shopware6-playwright-tools';
 
-test('Admin API operations', async ({ adminApi }) => {
+test('Flow operations', async ({flowService}) => {
   // Create a rule
-  const rule = await adminApi.post('/rule', {
+    const ruleId = await flowService.createRule({
+        id: 'static-uuid-here',
     name: 'Test Rule',
     priority: 1,
     conditions: []
   });
 
-  // Get data
-  const response = await adminApi.get('/rule/123');
+    // Create a flow
+    const flowId = await flowService.createFlow({
+        id: 'flow-uuid-here',
+        name: 'Test Flow',
+        eventName: 'checkout.order.placed',
+        priority: 1,
+        active: true,
+        sequences: [
+            flowService.buildSequence('action.add.order.tag', {tagId: 'tag-123'})
+        ]
+    });
+
+    // Cleanup is automatic after test (deletes flows, then rules)
+});
+```
+
+#### CartService
+
+Cart operations and order creation:
+
+```typescript
+import {test, expect, variables} from '@componentk/shopware6-playwright-tools';
+
+test('Cart operations', async ({cartService, customerService}) => {
+    // Register customer and get context token
+    const customer = await customerService.registerCustomer();
+
+    // Create new cart
+    const contextToken = await cartService.createNewCart();
+
+    // Add items to cart
+    await cartService.addLineItems(contextToken, [{
+        referencedId: variables.catalogProductMainId,
+        quantity: 1,
+        type: 'product'
+    }]);
+
+    // Get cart
+    const cart = await cartService.getCart(contextToken);
+
+    // Create order (with optional documents)
+    const orderId = await cartService.createOrder(contextToken, {
+        'document1': '/path/to/file.pdf'
+    });
+
+    // Cleanup is automatic after test
+});
+```
+
+#### ProductService
+
+Product cloning and management:
+
+```typescript
+import {test, expect, variables} from '@componentk/shopware6-playwright-tools';
+
+test('Product operations', async ({productService}) => {
+    // Clone a product
+    const clonedProductId = await productService.cloneProduct(variables.catalogProductMainId, {
+        id: 'static-product-uuid',
+        name: 'Cloned Product',
+        productNumber: 'CLONED-001'
+    });
+
+    // Cleanup is automatic after test
+});
+```
+
+#### ConfigService
+
+System configuration management with automatic restoration:
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Config operations', async ({configService}) => {
+    // Set config value (automatically restores original after test)
+    await configService.setConfig('MyPlugin.config.key', {
+        enabled: true,
+        value: 'test'
+    });
+
+    // Install multiple config entries
+    await configService.install([
+        {
+            configurationKey: 'MyPlugin.config.key1',
+            configurationValue: {enabled: true}
+        },
+        {
+            configurationKey: 'MyPlugin.config.key2',
+            configurationValue: {enabled: false}
+        }
+    ]);
+
+    // Original configs are automatically restored after test
+});
+```
+
+#### SnippetService
+
+Snippet creation and management:
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Snippet operations', async ({snippetService}) => {
+    // Create a snippet
+    const snippetId = await snippetService.createSnippet(
+        'MyPlugin.label.key',
+        'Label Text',
+        'en-GB'
+    );
+
+    // Cleanup is automatic after test
+});
+```
+
+#### TagService
+
+Tag creation and assignment:
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Tag operations', async ({tagService, orderService}) => {
+    // Create a tag
+    const tagId = await tagService.createTag('Test Tag', 'static-tag-uuid');
+
+    // Assign tag to order
+    await tagService.assignTagToOrder('order-id', tagId);
+
+    // Verify order has no specific tags
+    await orderService.verifyOrderHasNoTags('order-id', [tagId]);
+
+    // Cleanup is automatic after test
+});
+```
+
+#### OrderService
+
+Order operations and transaction management:
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Order operations', async ({orderService}) => {
+    // Get order tags
+    const tags = await orderService.getOrderTags('order-id');
+
+    // Verify order has no tags
+    await orderService.verifyOrderHasNoTags('order-id', ['tag-id-1', 'tag-id-2']);
+
+    // Get transaction IDs
+    const transactionIds = await orderService.getOrderTransactionIds('order-id');
+
+    // Transition transaction to remind state
+    await orderService.transitionTransactionToRemind('transaction-id');
+});
+```
+
+#### EmailService
+
+Email testing utilities (supports Mailpit and Mailcatcher):
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Email operations', async ({emailService}) => {
+    // Wait for email by recipient
+    const email = await emailService.waitForEmail('customer@example.com');
+
+    // Wait for email with content match
+    const email2 = await emailService.waitForEmail(undefined, 'Welcome to our store');
+
+    // Wait for email with subject tokens
+    const email3 = await emailService.waitForEmailWithSubjectTokens({
+        recipient: 'customer@example.com',
+        subjectTokens: ['Order', 'Confirmation'],
+        timeoutMs: 5000
+    });
+
+    // Get emails by recipient
+    const emails = await emailService.getEmailsByRecipient('customer@example.com');
+
+    // Clear inbox
+    await emailService.clearInbox();
+});
+```
+
+### Fallback: Raw API Access
+
+When you need to perform operations not covered by Service classes, use `adminApi` or `storefrontApi` directly:
+
+#### AdminApi
+
+Complete Admin API client with automatic authentication:
+
+```typescript
+import {test, expect} from '@componentk/shopware6-playwright-tools';
+
+test('Custom admin operations', async ({adminApi}) => {
+    // Only use when Service classes don't provide the needed functionality
+    const response = await adminApi.get('/custom-endpoint');
   const data = await response.json();
 
-  // Update data
-  await adminApi.patch('/rule/123', { name: 'Updated Rule' });
+    await adminApi.patch('/entity/123', {field: 'value'});
+    await adminApi.del('/entity/123');
 
-  // Delete data
-  await adminApi.del('/rule/123');
-
-  // Sync operations
+    // Sync operations for bulk operations
   await adminApi.sync({
-    'create-rules': {
-      entity: 'rule',
+      'create-entities': {
+          entity: 'entity',
       action: 'upsert',
-      payload: [ruleData]
+          payload: [entityData]
     }
   });
 });
 ```
 
-### StorefrontApi
+#### StorefrontApi
 
 Storefront API client with access key management:
 
 ```typescript
 import { test, expect } from '@componentk/shopware6-playwright-tools';
 
-test('Storefront API operations', async ({ storefrontApi }) => {
-  // Login and get context token
-  const loginResponse = await storefrontApi.post('/account/login', {
-    username: 'customer@example.com',
-    password: 'password'
-  });
-  const contextToken = loginResponse.headers()['sw-context-token'];
-
-  // Add item to cart
-  await storefrontApi.post('/checkout/cart/line-item', {
-    items: [{
-      referencedId: variables.catalogProductMainId,
-      quantity: 1,
-      type: 'product'
-    }]
+test('Custom storefront operations', async ({storefrontApi}) => {
+    // Only use when Service classes don't provide the needed functionality
+    const response = await storefrontApi.post('/custom-endpoint', {
+        data: 'value'
   }, {
-    headers: { 'sw-context-token': contextToken }
-  });
-
-  // Get cart
-  const cart = await storefrontApi.get('/checkout/cart', {
     headers: { 'sw-context-token': contextToken }
   });
 });
@@ -203,14 +432,31 @@ The package provides several test fixtures that extend Playwright's base test:
 ```typescript
 import { test, expect } from '@componentk/shopware6-playwright-tools';
 
-test('UI test with fixtures', async ({ 
-  page, 
-  adminApi, 
-  storefrontApi, 
-  adminLogin, 
-  utility 
+test('UI test with fixtures', async ({
+                                         page,
+                                         // Service classes (recommended)
+                                         customerService,
+                                         cartService,
+                                         flowService,
+                                         productService,
+                                         configService,
+                                         snippetService,
+                                         tagService,
+                                         orderService,
+                                         emailService,
+                                         // Raw API clients (fallback only)
+                                         adminApi,
+                                         storefrontApi,
+                                         // UI utilities
+                                         adminLogin,
+                                         utility
 }) => {
-  // All fixtures are available
+    // Prefer Service classes over raw API calls
+    const customer = await customerService.registerCustomer();
+    const flowId = await flowService.createFlow(flowConfig);
+
+    // Use raw API only for custom operations
+    const customData = await adminApi.get('/custom-endpoint');
 });
 ```
 
@@ -231,7 +477,7 @@ Pre-defined test variables for common Shopware entities:
 ```typescript
 import { variables } from '@componentk/shopware6-playwright-tools';
 
-// Product IDs
+// Default sample product IDs
 variables.catalogProductMainId
 variables.catalogProductFreeShip
 variables.catalogProductAdvPricesId
@@ -322,20 +568,22 @@ import { test, expect, variables } from '@componentk/shopware6-playwright-tools'
 test.describe('API Tests', { tag: '@api' }, () => {
   test.describe.configure({ mode: 'serial' });
 
-  test.beforeAll(async ({ adminApi }) => {
-    // Setup test data
+    test('should perform API operation', async ({
+                                                    flowService,
+                                                    customerService,
+                                                    cartService
+                                                }) => {
+        // Use Service classes - cleanup is automatic
+        const ruleId = await flowService.createRule(ruleData);
+        const customer = await customerService.registerCustomer();
+        const contextToken = await cartService.createNewCart();
+
+        // Service classes handle cleanup automatically after test
   });
 
-  test.afterAll(async ({ adminApi }) => {
-    // Cleanup test data
-  });
-
-  test.beforeEach(async ({ storefrontApi }) => {
-    // Setup for each test
-  });
-
-  test('should perform API operation', async ({ storefrontApi }) => {
-    // Test implementation
+    test('custom operation not covered by Service classes', async ({adminApi}) => {
+        // Only use raw API for operations not provided by Service classes
+        const response = await adminApi.get('/custom-endpoint');
   });
 });
 ```

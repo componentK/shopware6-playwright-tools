@@ -250,7 +250,9 @@ export class CustomerService {
      * Clean up all customers created during the test session
      */
     async cleanup(): Promise<void> {
-        for (const customerId of this.cleanupCustomers) {
+        // Clean up tracked customers
+        const ids = [...this.cleanupCustomers];
+        for (const customerId of ids) {
             await this.removeCustomer(customerId);
         }
         this.cleanupCustomers.length = 0;
