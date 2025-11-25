@@ -50,26 +50,70 @@ export class ConfigService {
 
                 if (existingData.length > 0) {
                     const idByKey = new Map<string, string>();
+                    const valueByKey = new Map<string, any>();
 
                     deletePayload = existingData
                         .filter((item: any) => item?.id && typeof item.configurationKey === 'string')
                         .map((item: any) => {
                             idByKey.set(item.configurationKey, item.id);
+                            valueByKey.set(item.configurationKey, item.configurationValue);
                             return {id: item.id};
                         });
 
+                    // Track original values for restoration (only if not already tracked)
+                    for (const entry of filteredEntries) {
+                        const key = entry.configurationKey;
+                        if (!this.originalConfigs.has(key)) {
+                            const existingId = idByKey.get(key);
+                            const originalValue = valueByKey.get(key);
+                            if (existingId) {
+                                this.originalConfigs.set(key, {id: existingId, value: originalValue});
+                            } else if (entry.id) {
+                                // Config doesn't exist yet, but we have an ID from the entry
+                                this.originalConfigs.set(key, {id: entry.id, value: undefined});
+                            }
+                        }
+                    }
+
+                    // Update upsert payload with correct IDs (use existing ID if found, otherwise use provided ID)
                     for (let index = 0; index < upsertPayload.length; index += 1) {
                         const entry = upsertPayload[index];
-                        if (!entry.id) {
-                            const existingId = idByKey.get(entry.configurationKey);
-                            if (existingId) {
-                                upsertPayload[index] = {...entry, id: existingId};
+                        const existingId = idByKey.get(entry.configurationKey);
+                        if (existingId) {
+                            // Use the existing ID from database (ensures we update the correct config)
+                            upsertPayload[index] = {...entry, id: existingId};
+                        } else if (!entry.id) {
+                            // No existing config and no ID provided, generate one
+                            const newId = uuidv4().replace(/-/g, '');
+                            upsertPayload[index] = {...entry, id: newId};
+                        }
+                        // If entry.id exists and no existingId, keep the provided ID (new config)
+                    }
+                } else {
+                    // No existing configs found - track new configs as undefined (will be deleted on restore)
+                    for (const entry of filteredEntries) {
+                        const key = entry.configurationKey;
+                        if (!this.originalConfigs.has(key)) {
+                            const configId = entry.id || uuidv4().replace(/-/g, '');
+                            this.originalConfigs.set(key, {id: configId, value: undefined});
+                            // Ensure entry has an ID for upsert
+                            const entryIndex = upsertPayload.findIndex(e => e.configurationKey === key);
+                            if (entryIndex >= 0 && !upsertPayload[entryIndex].id) {
+                                upsertPayload[entryIndex] = {...upsertPayload[entryIndex], id: configId};
                             }
                         }
                     }
                 }
             } else {
                 console.warn('  ⚠️ Failed to search for existing system config entries. Status:', searchResponse.status());
+                // Even if search fails, track configs to attempt restoration
+                for (const entry of filteredEntries) {
+                    const key = entry.configurationKey;
+                    if (!this.originalConfigs.has(key)) {
+                        const configId = entry.id || uuidv4().replace(/-/g, '');
+                        this.originalConfigs.set(key, {id: configId, value: undefined});
+                    }
+                }
             }
         } catch (error) {
             console.warn('  ⚠️ Error while searching for system config entries:', error);

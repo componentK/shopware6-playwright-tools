@@ -1,5 +1,9 @@
 ## Changelog
 
+### 1.5.1
+
+- Fixed configService install method not restoring original values
+
 ### 1.5.0
 
 - Added cleanup for cart service
