@@ -38,6 +38,18 @@ export class CustomerService {
     }
 
     /**
+     * Clears stored admin grid filters for the customer listing.
+     * Shopware persists filters per-user via the user-config endpoint, which can make UI tests flaky
+     * (e.g. the customer list unexpectedly showing only a subset of customers).
+     */
+    async resetCustomerGridFilters(): Promise<void> {
+        const response = await this.adminApi.patch('/_info/config-me', {
+            'grid.filter.customer': [],
+        });
+        expect(response.status()).toBe(204);
+    }
+
+    /**
      * Register a new customer via Storefront API
      */
     async registerCustomer(options: CustomerRegistrationOptions = {}): Promise<CustomerRegistrationResult> {

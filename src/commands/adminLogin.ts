@@ -21,8 +21,8 @@ class AdminLogin {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
-      // Wait for navigation to complete (either dashboard or banner)
-      await this.page.waitForURL(/.*dashboard|.*banner/, {timeout: 15000});
+    // Wait for navigation to complete (either dashboard or banner)
+    await this.page.waitForURL(/.*dashboard|.*banner/, {timeout: 15000});
   }
 }
 

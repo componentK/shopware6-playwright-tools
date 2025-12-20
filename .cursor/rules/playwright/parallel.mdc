@@ -1,0 +1,10 @@
+---
+description: Working on playwright tests with multiple test workers (runners)
+alwaysApply: false
+---
+
+- ensure that tests are isolated from each other
+- use static UUIDs that are unique when creating entities
+- do not re-use UUID's across different tests unless the tests are intentionally linked
+- you can re-use UUID's for global `system_config` entries as you do not want multiple to exist in the DB table
+- when testing Flow's, make sure the create unique rules (e.g. customer last name, cart product quantity)

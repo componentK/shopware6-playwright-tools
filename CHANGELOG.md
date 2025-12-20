@@ -1,5 +1,10 @@
 ## Changelog
 
+### 1.6.0
+
+- Added devToolbar removal
+- Added admin customer list filter reset
+
 ### 1.5.1
 
 - Fixed configService install method not restoring original values
