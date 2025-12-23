@@ -1,5 +1,9 @@
 ## Changelog
 
+### 1.6.2
+
+- Added new method for banner dismissal as a test
+
 ### 1.6.1
 
 - Reverted utility > banner closer logic (due to gitlab CI issues)
