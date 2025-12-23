@@ -1,5 +1,9 @@
 ## Changelog
 
+### 1.6.1
+
+- Reverted utility > banner closer logic (due to gitlab CI issues)
+
 ### 1.6.0
 
 - Added devToolbar removal

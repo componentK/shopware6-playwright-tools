@@ -8,20 +8,9 @@ class Utility {
     }
 
     async closeBanner() {
-        // do not refactor, this works
-        await this.page.addLocatorHandler(
-            this.page.getByRole('banner').getByRole('button', {name: 'Cancel'}),
-            async loc => {
-                try {
-                    // Wait for element to be stable before clicking
-                    await loc.waitFor({state: 'visible', timeout: 1000});
-                    await loc.click({timeout: 2000, force: true});
-                } catch (error) {
-                    // If banner is already gone or unstable, ignore the error
-                    // This prevents the handler from interfering with other interactions
-                }
-            }
-        );
+        const cancelButton = this.page.getByRole('banner').getByRole('button', {name: 'Cancel'});
+        await cancelButton.click({timeout: 3000, force: true}).catch(() => {
+        });
     }
 
     async closeDevToolbar(): Promise<void> {
