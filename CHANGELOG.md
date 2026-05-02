@@ -6,7 +6,7 @@
 - Changed `FlowSequence.trueCase` to be optional
 - Changed `getCart(contextToken, options?)` to accept optional `headers` and `query` (query appended to `/checkout/cart`). 
 Changed `addLineItems(contextToken, items, options?)` to accept optional extra `headers`; `sw-context-token` is always merged in.
-- Chnaged npm publish workflow uses OIDC (`permissions.id-token: write`), Node 24, and `pnpm publish` without `NPM_TOKEN` secret env.
+- Changed npm publish workflow uses OIDC (`permissions.id-token: write`), Node 24, `pnpm/action-setup` without a separate pnpm version (uses `packageManager` from package.json only), and `pnpm publish` without `NPM_TOKEN` secret env.
 
 ### 1.6.2
 
