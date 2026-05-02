@@ -27,12 +27,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/componentk/shopware6-playwright-tools.git"
+    "url": "https://github.com/componentK/shopware6-playwright-tools"
   },
   "bugs": {
-    "url": "https://github.com/componentk/shopware6-playwright-tools/issues"
+    "url": "https://github.com/componentK/shopware6-playwright-tools/issues"
   },
-  "homepage": "https://github.com/componentk/shopware6-playwright-tools#readme",
+  "homepage": "https://github.com/componentK/shopware6-playwright-tools#readme",
   "engines": {
     "node": ">=18.0.0"
   },
