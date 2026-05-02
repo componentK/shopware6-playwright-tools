@@ -1,4 +1,4 @@
-// CommonJS entry point for @componentk/playwright-tools
+// CommonJS entry point for @componentk/shopware6-playwright-tools
 const ui = require('./dist/fixtures/ui.js');
 const db = require('./dist/fixtures/db.js');
 const adminApi = require('./dist/commands/adminApi.js');

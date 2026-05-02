@@ -1,5 +1,13 @@
 ## Changelog
 
+### 1.6.3
+
+- Added `packageManager` (pnpm 10.23.0); fix CommonJS entry comment to `@componentk/shopware6-playwright-tools`.
+- Changed `FlowSequence.trueCase` to be optional
+- Changed `getCart(contextToken, options?)` to accept optional `headers` and `query` (query appended to `/checkout/cart`). 
+Changed `addLineItems(contextToken, items, options?)` to accept optional extra `headers`; `sw-context-token` is always merged in.
+- Chnaged npm publish workflow uses OIDC (`permissions.id-token: write`), Node 24, and `pnpm publish` without `NPM_TOKEN` secret env.
+
 ### 1.6.2
 
 - Added new method for banner dismissal as a test

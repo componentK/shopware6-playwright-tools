@@ -9,7 +9,8 @@ export interface FlowSequence {
     ruleId?: string;
     parentId?: string;
     position: number;
-    trueCase: boolean;
+    /** Present on branch/action sequences; omitted on rule-only nodes from API dumps. */
+    trueCase?: boolean;
     displayGroup: number;
 }
 

@@ -37,11 +37,23 @@ export class CartService {
      * This will load the existing cart without creating a new one.
      *
      * @param contextToken - Context token for the cart session
+     * @param options - Optional configuration
+     * @param options.headers - Additional headers to include (sw-context-token is always included)
+     * @param options.query - Query parameters to append to the URL (e.g., '?customParam=test')
      * @returns Cart payload
      */
-    async getCart(contextToken: string): Promise<any> {
-        const cartResponse = await this.storefrontApi.get('/checkout/cart', {
-            headers: {'sw-context-token': contextToken}
+    async getCart(contextToken: string, options?: { headers?: Record<string, string>; query?: string }): Promise<any> {
+        const headers: Record<string, string> = {
+            'sw-context-token': contextToken,
+            ...(options?.headers || {})
+        };
+
+        const url = options?.query 
+            ? `/checkout/cart${options.query.startsWith('?') ? options.query : `?${options.query}`}`
+            : '/checkout/cart';
+
+        const cartResponse = await this.storefrontApi.get(url, {
+            headers
         });
         expect(cartResponse.status()).toBe(200);
         return await cartResponse.json();
@@ -52,13 +64,20 @@ export class CartService {
      *
      * @param contextToken - Context token for the cart session
      * @param items - Array of line items to add to the cart
+     * @param options - Optional configuration
+     * @param options.headers - Additional headers to include (sw-context-token is always included)
      * @returns Cart payload
      */
-    async addLineItems(contextToken: string, items: CartLineItem[]): Promise<any> {
+    async addLineItems(contextToken: string, items: CartLineItem[], options?: { headers?: Record<string, string> }): Promise<any> {
+        const headers: Record<string, string> = {
+            'sw-context-token': contextToken,
+            ...(options?.headers || {})
+        };
+
         const addItemResponse = await this.storefrontApi.post('/checkout/cart/line-item', {
             items: items
         }, {
-            headers: {'sw-context-token': contextToken}
+            headers
         });
         expect(addItemResponse.status()).toBe(200);
         return await addItemResponse.json();

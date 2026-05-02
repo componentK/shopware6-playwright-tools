@@ -5,3 +5,5 @@ alwaysApply: false
 
 - after adding product to cart, make sure to check that it was added before proceeding
 - after a page transition, target a content element for visibility before proceeding to ensure the page is loaded
+- I suggest waiting for page headings to load (inside vital components) when changing pages and tabs 
+- Do not wait for network idle, the admin pages keep querying behind the scene infinitely
