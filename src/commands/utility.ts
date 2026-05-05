@@ -14,15 +14,35 @@ class Utility {
     }
 
     async closeDevToolbar(): Promise<void> {
-        await this.page.locator('button.sf-toolbar-toggle-button [title="Close Toolbar"]').click({timeout: 3000}).catch(() => {
+        const opened = this.page.locator('.sf-toolbar.sf-toolbar-opened').first();
+        if (!(await opened.isVisible().catch(() => false))) {
+            return;
+        }
+        const toggle = this.page.locator('button.sf-toolbar-toggle-button').first();
+        await toggle.click({timeout: 3000}).catch(() => {
         });
+        if (await opened.isVisible().catch(() => false)) {
+            await this.page
+                .locator('.sf-toolbar.sf-toolbar-opened')
+                .first()
+                .evaluate((el: HTMLElement) => {
+                    el.classList.remove('sf-toolbar-opened');
+                    el.classList.add('sf-toolbar-closed');
+                })
+                .catch(() => {
+                });
+        }
+        if (await this.page.locator('.sf-toolbar.sf-toolbar-opened').first().isVisible().catch(() => false)) {
+            await this.page
+                .addStyleTag({content: '.sf-toolbar { pointer-events: none !important; }'})
+                .catch(() => {
+                });
+        }
     }
 
-    // more reliable way to remove the dev toolbar at the bottom of the page
+    /** @alias closeDevToolbar — used by admin e2e specs */
     async removeDevToolbar(): Promise<void> {
-        await this.page.locator('div.sf-toolbar').evaluate(
-            node => node.remove()
-        );
+        await this.closeDevToolbar();
     }
 
     // Dismiss any notification banners that might be blocking interactions

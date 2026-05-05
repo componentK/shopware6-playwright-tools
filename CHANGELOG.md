@@ -1,5 +1,11 @@
 ## Changelog
 
+### 1.6.4
+
+- Added flow removing by event name (for better reset)
+- Changed SystemConfig manager to properly remove existing configs and skips updating already set configs
+- Changed dev toolbar closure logic
+
 ### 1.6.3
 
 - Added `packageManager` (pnpm 10.23.0); fix CommonJS entry comment to `@componentk/shopware6-playwright-tools`.

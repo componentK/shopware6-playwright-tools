@@ -1,4 +1,4 @@
-import {AdminApi} from '../index.js';
+import {AdminApi} from '../commands/adminApi.js';
 import {expect} from '@playwright/test';
 import {v4 as uuidv4} from 'uuid';
 
@@ -66,6 +66,81 @@ export class FlowService {
         this.cleanupRules.push(ruleId);
 
         return ruleId;
+    }
+
+    /**
+     * Set active=false for all flows matching a Shopware Flow event name.
+     * Does not delete flows or sequences — scenarios stay in the DB for inspection or re-activation.
+     *
+     * @returns Number of flows that were active and are now deactivated
+     */
+    async deactivateFlowsByEventName(eventName: string): Promise<number> {
+        const searchResponse = await this.adminApi.post('/search/flow', {
+            filter: [{type: 'equals', field: 'eventName', value: eventName}],
+            limit: 500,
+        });
+        if (searchResponse.status() !== 200) {
+            throw new Error(
+                `Flow search failed for eventName "${eventName}": HTTP ${searchResponse.status()}`,
+            );
+        }
+        const body = await searchResponse.json().catch(() => null);
+        const rows: any[] = Array.isArray(body?.data) ? body.data : [];
+        const toDeactivate = rows
+            .map((raw) => this.normalizeFlowSearchRow(raw))
+            .filter((f) => f.id && f.active);
+
+        if (toDeactivate.length === 0) {
+            return 0;
+        }
+
+        const payload = toDeactivate.map((f) => {
+            const row: { id: string; active: boolean; versionId?: string } = {
+                id: f.id,
+                active: false,
+            };
+            if (f.versionId) {
+                row.versionId = f.versionId;
+            }
+            return row;
+        });
+
+        const syncResponse = await this.adminApi.sync({
+            'deactivate-flows-by-event': {
+                entity: 'flow',
+                action: 'upsert',
+                payload,
+            },
+        });
+
+        if ([200, 204].includes(syncResponse.status())) {
+            return toDeactivate.length;
+        }
+
+        let patched = 0;
+        for (const f of toDeactivate) {
+            const patchResponse = await this.adminApi.patch(`/flow/${f.id}`, {active: false});
+            if ([200, 204].includes(patchResponse.status())) {
+                patched++;
+            }
+        }
+        if (patched !== toDeactivate.length) {
+            throw new Error(
+                `Could not deactivate all flows for "${eventName}" (sync failed, PATCH patched ${patched}/${toDeactivate.length})`,
+            );
+        }
+        return patched;
+    }
+
+    private normalizeFlowSearchRow(raw: any): { id: string; active: boolean; versionId?: string } {
+        const id = raw?.id ?? raw?.attributes?.id ?? '';
+        const active = raw?.active ?? raw?.attributes?.active ?? false;
+        const versionId = raw?.versionId ?? raw?.attributes?.versionId;
+        return {
+            id: typeof id === 'string' ? id : String(id),
+            active: Boolean(active),
+            versionId: typeof versionId === 'string' ? versionId : undefined,
+        };
     }
 
     /**

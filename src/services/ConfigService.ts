@@ -15,6 +15,18 @@ export class ConfigService {
         this.adminApi = adminApi;
     }
 
+    private static unwrapSystemConfigValue(raw: unknown): unknown {
+        if (raw && typeof raw === 'object' && !Array.isArray(raw) && '_value' in raw) {
+            return (raw as { _value: unknown })._value;
+        }
+
+        return raw;
+    }
+
+    private static valuesEqual(left: unknown, right: unknown): boolean {
+        return JSON.stringify(left) === JSON.stringify(right);
+    }
+
     async install(configEntries: SystemConfigEntry[]): Promise<void> {
         if (!Array.isArray(configEntries) || configEntries.length === 0) {
             console.warn('⚠️ ConfigManager.install called without configuration entries');
@@ -28,9 +40,9 @@ export class ConfigService {
         }
 
         const keysToManage = filteredEntries.map(entry => entry.configurationKey);
-
-        let deletePayload: Array<{ id: string }> = [];
-        const upsertPayload: SystemConfigEntry[] = [...filteredEntries];
+        const deletePayload: Array<{ id: string }> = [];
+        const deleteIds = new Set<string>();
+        const upsertPayload: SystemConfigEntry[] = [];
 
         try {
             const searchResponse = await this.adminApi.post('/search/system-config', {
@@ -38,7 +50,7 @@ export class ConfigService {
                     {
                         type: 'equalsAny',
                         field: 'configurationKey',
-                        value: keysToManage.join('|')
+                        value: keysToManage
                     }
                 ],
                 limit: Math.max(500, keysToManage.length)
@@ -47,76 +59,100 @@ export class ConfigService {
             if (searchResponse.ok()) {
                 const searchResult = await searchResponse.json().catch(() => null);
                 const existingData: any[] = Array.isArray(searchResult?.data) ? searchResult.data : [];
+                const rowsByKey = new Map<string, any[]>();
+                for (const item of existingData) {
+                    if (!item?.id || typeof item.configurationKey !== 'string') {
+                        continue;
+                    }
 
-                if (existingData.length > 0) {
-                    const idByKey = new Map<string, string>();
-                    const valueByKey = new Map<string, any>();
+                    const bucket = rowsByKey.get(item.configurationKey);
+                    if (bucket) {
+                        bucket.push(item);
+                    } else {
+                        rowsByKey.set(item.configurationKey, [item]);
+                    }
+                }
 
-                    deletePayload = existingData
-                        .filter((item: any) => item?.id && typeof item.configurationKey === 'string')
-                        .map((item: any) => {
-                            idByKey.set(item.configurationKey, item.id);
-                            valueByKey.set(item.configurationKey, item.configurationValue);
-                            return {id: item.id};
+                // Track original values for restoration only once
+                for (const entry of filteredEntries) {
+                    if (this.originalConfigs.has(entry.configurationKey)) {
+                        continue;
+                    }
+
+                    const existingRows = rowsByKey.get(entry.configurationKey) || [];
+                    const matchingById = entry.id ? existingRows.find((row: any) => row.id === entry.id) : undefined;
+                    const rowToTrack = matchingById || existingRows[0];
+                    if (rowToTrack?.id) {
+                        this.originalConfigs.set(entry.configurationKey, {
+                            id: rowToTrack.id,
+                            value: ConfigService.unwrapSystemConfigValue(rowToTrack.configurationValue),
                         });
+                    } else {
+                        const configId = entry.id || uuidv4().replace(/-/g, '');
+                        this.originalConfigs.set(entry.configurationKey, {id: configId, value: undefined});
+                    }
+                }
 
-                    // Track original values for restoration (only if not already tracked)
-                    for (const entry of filteredEntries) {
-                        const key = entry.configurationKey;
-                        if (!this.originalConfigs.has(key)) {
-                            const existingId = idByKey.get(key);
-                            const originalValue = valueByKey.get(key);
-                            if (existingId) {
-                                this.originalConfigs.set(key, {id: existingId, value: originalValue});
-                            } else if (entry.id) {
-                                // Config doesn't exist yet, but we have an ID from the entry
-                                this.originalConfigs.set(key, {id: entry.id, value: undefined});
+                for (const entry of filteredEntries) {
+                    const existingRows = rowsByKey.get(entry.configurationKey) || [];
+
+                    if (entry.id) {
+                        for (const row of existingRows) {
+                            if (row.id !== entry.id && !deleteIds.has(row.id)) {
+                                deleteIds.add(row.id);
+                                deletePayload.push({id: row.id});
                             }
                         }
+
+                        const matchingRow = existingRows.find((row: any) => row.id === entry.id);
+                        if (!matchingRow) {
+                            upsertPayload.push(entry);
+                            continue;
+                        }
+
+                        const currentValue = ConfigService.unwrapSystemConfigValue(matchingRow.configurationValue);
+                        if (!ConfigService.valuesEqual(currentValue, entry.configurationValue)) {
+                            upsertPayload.push(entry);
+                        }
+
+                        continue;
                     }
 
-                    // Update upsert payload with correct IDs (use existing ID if found, otherwise use provided ID)
-                    for (let index = 0; index < upsertPayload.length; index += 1) {
-                        const entry = upsertPayload[index];
-                        const existingId = idByKey.get(entry.configurationKey);
-                        if (existingId) {
-                            // Use the existing ID from database (ensures we update the correct config)
-                            upsertPayload[index] = {...entry, id: existingId};
-                        } else if (!entry.id) {
-                            // No existing config and no ID provided, generate one
-                            const newId = uuidv4().replace(/-/g, '');
-                            upsertPayload[index] = {...entry, id: newId};
-                        }
-                        // If entry.id exists and no existingId, keep the provided ID (new config)
+                    const row = existingRows[0];
+                    if (!row) {
+                        upsertPayload.push({...entry, id: uuidv4().replace(/-/g, '')});
+                        continue;
                     }
-                } else {
-                    // No existing configs found - track new configs as undefined (will be deleted on restore)
-                    for (const entry of filteredEntries) {
-                        const key = entry.configurationKey;
-                        if (!this.originalConfigs.has(key)) {
-                            const configId = entry.id || uuidv4().replace(/-/g, '');
-                            this.originalConfigs.set(key, {id: configId, value: undefined});
-                            // Ensure entry has an ID for upsert
-                            const entryIndex = upsertPayload.findIndex(e => e.configurationKey === key);
-                            if (entryIndex >= 0 && !upsertPayload[entryIndex].id) {
-                                upsertPayload[entryIndex] = {...upsertPayload[entryIndex], id: configId};
-                            }
-                        }
+
+                    const currentValue = ConfigService.unwrapSystemConfigValue(row.configurationValue);
+                    if (!ConfigService.valuesEqual(currentValue, entry.configurationValue)) {
+                        upsertPayload.push({...entry, id: row.id});
                     }
                 }
             } else {
                 console.warn('  ⚠️ Failed to search for existing system config entries. Status:', searchResponse.status());
-                // Even if search fails, track configs to attempt restoration
+                // Fallback: upsert all and track unknown originals.
                 for (const entry of filteredEntries) {
                     const key = entry.configurationKey;
                     if (!this.originalConfigs.has(key)) {
                         const configId = entry.id || uuidv4().replace(/-/g, '');
                         this.originalConfigs.set(key, {id: configId, value: undefined});
                     }
+                    upsertPayload.push({
+                        ...entry,
+                        id: entry.id || uuidv4().replace(/-/g, ''),
+                    });
                 }
             }
         } catch (error) {
             console.warn('  ⚠️ Error while searching for system config entries:', error);
+            for (const entry of filteredEntries) {
+                const configId = entry.id || uuidv4().replace(/-/g, '');
+                if (!this.originalConfigs.has(entry.configurationKey)) {
+                    this.originalConfigs.set(entry.configurationKey, {id: configId, value: undefined});
+                }
+                upsertPayload.push({...entry, id: configId});
+            }
         }
 
         const syncPayload: Record<string, { entity: string; action: string; payload: Array<any> }> = {};
@@ -129,11 +165,17 @@ export class ConfigService {
             };
         }
 
-        syncPayload['write-system-config'] = {
-            entity: 'system_config',
-            action: 'upsert',
-            payload: upsertPayload
-        };
+        if (upsertPayload.length > 0) {
+            syncPayload['write-system-config'] = {
+                entity: 'system_config',
+                action: 'upsert',
+                payload: upsertPayload
+            };
+        }
+
+        if (Object.keys(syncPayload).length === 0) {
+            return;
+        }
 
         const syncResponse = await this.adminApi.sync(syncPayload);
 
