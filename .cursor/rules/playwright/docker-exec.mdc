@@ -1,0 +1,13 @@
+---
+description: when running Playwright in Dockware/Docker or wrapping commands in docker exec
+alwaysApply: false
+---
+
+- Dockware images often ship Node only on NVM: prepend that Node version’s `bin` to `PATH` before `pnpm` (
+  e.g. `/var/www/.nvm/versions/node/<ver>/bin`).
+- Use `corepack enable` and `corepack prepare pnpm@<version> --activate` so `pnpm` matches the repo’s `packageManager`
+  field.
+- Install browsers inside the same container you run tests in; set `PLAYWRIGHT_BROWSERS_PATH` consistently (e.g. CI and
+  local Docker) before `playwright install`.
+- Avoid `cmd1 && docker exec … cmd2 || echo skip`: if `cmd2` fails, the overall shell can still exit 0;
+  check `docker exec`’s exit code explicitly or use `set -e` with a deliberate skip branch.

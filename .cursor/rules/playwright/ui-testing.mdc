@@ -3,7 +3,17 @@ description: when testing UI in Shopware 6 Admin or Storefront
 alwaysApply: false
 ---
 
-- after adding product to cart, make sure to check that it was added before proceeding
-- after a page transition, target a content element for visibility before proceeding to ensure the page is loaded
-- I suggest waiting for page headings to load (inside vital components) when changing pages and tabs 
-- Do not wait for network idle, the admin pages keep querying behind the scene infinitely
+- After adding product to cart, verify it was added before proceeding.
+- After a page transition, assert a stable content element is visible before the next interaction so the view is
+  actually mounted.
+- When changing pages or tabs, wait for a heading or other anchor inside the target view (not only the shell).
+- Do not wait for network idle on admin; background polling keeps the network busy.
+- After clicks that toggle Vue state (e.g. customer Edit), wait for a primary signal (enabled control, class change)
+  with a timeout well above 5s before asserting dependent controls.
+- Hash-only navigation (`location.hash` or `page.goto('/admin#/…')`) can change the URL without running Vue Router;
+  boot `/admin`, wait for `.sw-desktop`, then `Shopware.Application.view.router.push` (name + params or path)
+  and `waitForURL` on the hash.
+- Prefer a single root locator when Shopware duplicates a page class on an inner wrapper (
+  e.g. `div.sw-page.sw-customer-detail` or `div.sw-page.sw-users-permissions-role-detail`) to avoid strict-mode
+  violations.
+- Dockerized Playwright (NVM, pnpm, browsers, shell exit codes) lives in `docker-exec.mdc` in this folder.

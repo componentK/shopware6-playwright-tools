@@ -25,6 +25,9 @@ alwaysApply: false
 - UUID's in Shopware are 32 character strings without hyphens
 - Reference ./uuid-generation.mdc for generating new ones
 - Copy existing rule/flow.json payloads, and do not modify without permission "keys" in the payload. Only change values.
+- A system admin (`user.admin`) can exist while the `acl_role` table is empty (e.g. some Dockware
+  states); `POST /search/acl-role` may return no rows. When a test needs a role id, create a disposable `acl-role` via
+  API and remove it in `finally` if the test created it.
 
 ## Test Execution
 - Run with: `npx playwright test customer-approval.spec.ts `
