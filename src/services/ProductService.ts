@@ -1,7 +1,5 @@
 import {AdminApi} from '../commands/adminApi.js';
-import variables from '../fixtures/variables.json'
-
-with {type: 'json'};
+import variables from '../fixtures/variables.json' with {type: 'json'};
 import {expect} from '@playwright/test';
 import {v4 as uuidv4} from 'uuid';
 
