@@ -1,4 +1,4 @@
-import {AdminApi} from '../index.js';
+import {AdminApi} from '../commands/adminApi.js';
 import {expect} from '@playwright/test';
 
 export interface OrderCreationOptions {

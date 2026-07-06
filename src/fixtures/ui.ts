@@ -12,6 +12,7 @@ import {EmailService} from '../services/EmailService.js'
 import {ConfigService} from '../services/ConfigService.js'
 import {ProductService} from '../services/ProductService.js'
 import {SnippetService} from '../services/SnippetService.js'
+import {ShopContextService} from '../services/ShopContextService.js'
 
 export type TestFixtures = {
     page: Page
@@ -29,6 +30,7 @@ export type TestFixtures = {
     configService: ConfigService
     productService: ProductService
     snippetService: SnippetService
+    shopContextService: ShopContextService
 }
 
 export type SalesChannel = {
@@ -147,6 +149,11 @@ const test = base.extend<TestFixtures, SalesChannel>({
         await use(snippetService)
 
         await snippetService.cleanup()
+    },
+
+    shopContextService: async ({adminApi, storefrontApi}, use) => {
+        const shopContextService = new ShopContextService(adminApi, storefrontApi)
+        await use(shopContextService)
     }
 })
 

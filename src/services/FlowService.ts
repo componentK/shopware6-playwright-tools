@@ -33,6 +33,114 @@ export class FlowService {
     }
 
     /**
+     * Replace an existing flow (delete + create). Does not track for automatic cleanup.
+     */
+    async upsertFlow(flowConfig: FlowConfig | Record<string, unknown>): Promise<string> {
+        const flowId = flowConfig.id as string;
+        await this.adminApi.del(`/flow/${flowId}`).catch(() => undefined);
+        const response = await this.adminApi.post('/flow', flowConfig);
+        expect(response.status()).toBe(204);
+        return flowId;
+    }
+
+    /**
+     * Replace an existing rule (delete + create). Does not track for automatic cleanup.
+     */
+    async upsertRule(ruleData: Record<string, unknown>): Promise<string> {
+        const ruleId = ruleData.id as string;
+        await this.adminApi.del(`/rule/${ruleId}`).catch(() => undefined);
+        const response = await this.adminApi.post('/rule', ruleData);
+        expect(response.status()).toBe(204);
+        return ruleId;
+    }
+
+    /**
+     * Delete a flow and optionally its linked rule. Does not affect cleanup tracking lists.
+     */
+    async deleteFlowAndRule(flowId: string, ruleId?: string): Promise<void> {
+        await this.deleteFlow(flowId);
+        if (ruleId) {
+            await this.deleteRule(ruleId);
+        }
+    }
+
+    /**
+     * Replace an existing promotion (delete + create) and assign it to a sales channel.
+     */
+    async upsertPromotion(promotion: Record<string, unknown>, salesChannelId: string): Promise<string> {
+        const promotionId = promotion.id as string;
+        await this.adminApi.del(`/promotion/${promotionId}`).catch(() => undefined);
+        const payload = {
+            ...promotion,
+            salesChannels: [{salesChannelId, priority: 1}],
+        };
+        const response = await this.adminApi.post('/promotion', payload);
+        expect(response.status()).toBe(204);
+        return promotionId;
+    }
+
+    /**
+     * Patch product placeholder IDs inside flow sequence configs.
+     */
+    static patchProductIds(
+        flow: Record<string, unknown>,
+        productIdMap: Record<string, string>,
+    ): Record<string, unknown> {
+        const sequences = (flow.sequences as Array<Record<string, unknown>> | undefined)?.map((sequence) => {
+            const config = sequence.config as Record<string, unknown> | undefined;
+            if (!config?.id || typeof config.id !== 'string') {
+                return sequence;
+            }
+            const mappedId = productIdMap[config.id];
+            if (!mappedId) {
+                return sequence;
+            }
+            return {
+                ...sequence,
+                config: {
+                    ...config,
+                    id: mappedId,
+                },
+            };
+        });
+
+        return {...flow, sequences};
+    }
+
+    /**
+     * Patch tag IDs inside add-customer-tag flow action configs.
+     */
+    static patchTagIds(
+        flow: Record<string, unknown>,
+        tagId: string,
+        tagName: string,
+    ): Record<string, unknown> {
+        const sequences = (flow.sequences as Array<Record<string, unknown>> | undefined)?.map((sequence) => {
+            if (sequence.actionName !== 'action.add.customer.tag') {
+                return sequence;
+            }
+            const config = sequence.config as Record<string, unknown> | undefined;
+            return {
+                ...sequence,
+                config: {
+                    ...config,
+                    tagIds: {[tagId]: tagName},
+                },
+            };
+        });
+
+        return {...flow, sequences};
+    }
+
+    static patchPromoId(flow: Record<string, unknown>, promoId: string): Record<string, unknown> {
+        return FlowService.patchProductIds(flow, {'__PROMO_ID__': promoId, '__PROMO2_ID__': promoId});
+    }
+
+    static patchRulePromoId(rule: Record<string, unknown>, promoId: string): Record<string, unknown> {
+        return JSON.parse(JSON.stringify(rule).split('__PROMO_ID__').join(promoId)) as Record<string, unknown>;
+    }
+
+    /**
      * Create a flow with sequences
      */
     async createFlow(flowConfig: FlowConfig): Promise<string> {

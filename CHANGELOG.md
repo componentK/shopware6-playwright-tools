@@ -1,5 +1,19 @@
 ## Changelog
 
+### 1.7.0
+
+- Consolidated standalone test helpers into service classes for a single API surface
+- Added `ShopContextService` for sales channel, shipping/payment/language lookups, store context patches, and cache
+  clearing
+- Extended `FlowService` with `upsertFlow`, `upsertRule`, `deleteFlowAndRule`, `upsertPromotion`, and static flow JSON
+  patch helpers
+- Extended `CartService` with `updateLineItems`, `clearCart`, and static cart error helpers
+- Extended `CustomerService` with main-customer helpers, guest cart merge on login/register, customer group CRUD, and
+  profile/admin getters
+- Extended `ProductService` with catalog lookups, gift-wrap product setup, and `getProductIdByNumber`
+- Fixed circular imports by removing `../index.js` re-exports from service modules
+- Added test fixture UUIDs for AdvCart flows (`createdCustomerGrp1Net`, `createdFieldSet1Id`, etc.)
+
 ### 1.6.4
 
 - Added flow removing by event name (for better reset)

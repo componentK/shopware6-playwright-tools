@@ -1,4 +1,5 @@
-import {StorefrontApi, AdminApi} from '../index.js';
+import {StorefrontApi} from '../commands/storefrontApi.js';
+import {AdminApi} from '../commands/adminApi.js';
 import {expect} from '@playwright/test';
 import * as fs from 'fs';
 
@@ -17,6 +18,29 @@ export class CartService {
     constructor(storefrontApi: StorefrontApi, adminApi?: AdminApi) {
         this.storefrontApi = storefrontApi;
         this.adminApi = adminApi;
+    }
+
+    static getErrors(cart: { errors?: unknown }): unknown[] {
+        if (!cart.errors) {
+            return [];
+        }
+        return Array.isArray(cart.errors) ? cart.errors : Object.values(cart.errors as Record<string, unknown>);
+    }
+
+    static findMessageBySequenceId(
+        cart: { errors?: Record<string, unknown> | unknown[] },
+        sequenceId: string,
+    ): Record<string, unknown> | undefined {
+        const errors = cart.errors;
+        if (!errors) {
+            return undefined;
+        }
+        if (Array.isArray(errors)) {
+            return errors.find((error) =>
+                String((error as Record<string, unknown>).key ?? '').includes(sequenceId),
+            ) as Record<string, unknown> | undefined;
+        }
+        return errors[`action-cart-message-${sequenceId}`] as Record<string, unknown> | undefined;
     }
 
     /**
@@ -48,7 +72,7 @@ export class CartService {
             ...(options?.headers || {})
         };
 
-        const url = options?.query 
+        const url = options?.query
             ? `/checkout/cart${options.query.startsWith('?') ? options.query : `?${options.query}`}`
             : '/checkout/cart';
 
@@ -81,6 +105,38 @@ export class CartService {
         });
         expect(addItemResponse.status()).toBe(200);
         return await addItemResponse.json();
+    }
+
+    /**
+     * Update line item quantities or payloads in the cart.
+     */
+    async updateLineItems(
+        contextToken: string,
+        items: Array<{ id: string; quantity?: number; payload?: Record<string, unknown> }>,
+        options?: { headers?: Record<string, string> },
+    ): Promise<any> {
+        const headers: Record<string, string> = {
+            'sw-context-token': contextToken,
+            ...(options?.headers || {}),
+        };
+
+        const response = await this.storefrontApi.patch('/checkout/cart/line-item', {items}, {headers});
+        expect(response.status()).toBe(200);
+        return response.json();
+    }
+
+    /**
+     * Delete the current cart session and start a fresh cart.
+     *
+     * @returns Updated context token when Shopware rotates it
+     */
+    async clearCart(contextToken: string): Promise<string> {
+        const options = {headers: {'sw-context-token': contextToken}};
+
+        const deleteResponse = await this.storefrontApi.del('/checkout/cart', undefined, options);
+        expect(deleteResponse.status()).toBe(204);
+
+        return deleteResponse.headers()['sw-context-token'] ?? contextToken;
     }
 
     /**

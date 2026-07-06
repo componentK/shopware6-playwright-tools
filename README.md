@@ -120,8 +120,16 @@ test('Customer operations', async ({customerService}) => {
         email: 'clone@example.com'
     });
 
-    // Login customer
+    // Login customer (optionally merge a guest cart)
     const contextToken = await customerService.loginCustomer('test@example.com', 'password');
+    const mergedToken = await customerService.loginCustomer('test@example.com', 'password', {
+        guestContextToken: guestCartToken,
+    });
+
+    // Shared demo customer helpers (variables.userEmail / variables.userPass)
+    await customerService.resetMainCustomer();
+    const mainToken = await customerService.loginMainCustomer();
+    await customerService.clearMainCustomerTags();
 
     // Cleanup is automatic after test
 });
@@ -132,10 +140,10 @@ test('Customer operations', async ({customerService}) => {
 Flow Builder rule and flow management:
 
 ```typescript
-import { test, expect } from '@componentk/shopware6-playwright-tools';
+import { test, expect, FlowService } from '@componentk/shopware6-playwright-tools';
 
 test('Flow operations', async ({flowService}) => {
-  // Create a rule
+  // Create a rule (tracked for automatic cleanup)
     const ruleId = await flowService.createRule({
         id: 'static-uuid-here',
     name: 'Test Rule',
@@ -143,7 +151,7 @@ test('Flow operations', async ({flowService}) => {
     conditions: []
   });
 
-    // Create a flow
+    // Create a flow (tracked for automatic cleanup)
     const flowId = await flowService.createFlow({
         id: 'flow-uuid-here',
         name: 'Test Flow',
@@ -155,7 +163,16 @@ test('Flow operations', async ({flowService}) => {
         ]
     });
 
-    // Cleanup is automatic after test (deletes flows, then rules)
+    // Replace existing fixtures from JSON templates (not tracked for cleanup)
+    await flowService.upsertRule(rulePayload);
+    await flowService.upsertFlow(flowPayload);
+    await flowService.deleteFlowAndRule(flowId, ruleId);
+
+    // Patch placeholder IDs in exported flow JSON before upserting
+    const patched = FlowService.patchProductIds(flowTemplate, {__PRODUCT_ID__: productId});
+    const withTag = FlowService.patchTagIds(flowTemplate, tagId, 'My Tag');
+
+    // Cleanup is automatic after test (deletes flows, then rules created via createFlow/createRule)
 });
 ```
 
@@ -164,7 +181,7 @@ test('Flow operations', async ({flowService}) => {
 Cart operations and order creation:
 
 ```typescript
-import {test, expect, variables} from '@componentk/shopware6-playwright-tools';
+import {test, expect, variables, CartService} from '@componentk/shopware6-playwright-tools';
 
 test('Cart operations', async ({cartService, customerService}) => {
     // Register customer and get context token
@@ -180,8 +197,14 @@ test('Cart operations', async ({cartService, customerService}) => {
         type: 'product'
     }]);
 
-    // Get cart
+    // Get cart and inspect flow action messages
     const cart = await cartService.getCart(contextToken);
+    const errors = CartService.getErrors(cart);
+    const message = CartService.findMessageBySequenceId(cart, sequenceId);
+
+    // Update quantities or clear the session
+    await cartService.updateLineItems(contextToken, [{id: lineItemId, quantity: 2}]);
+    const freshToken = await cartService.clearCart(contextToken);
 
     // Create order (with optional documents)
     const orderId = await cartService.createOrder(contextToken, {
@@ -194,12 +217,15 @@ test('Cart operations', async ({cartService, customerService}) => {
 
 #### ProductService
 
-Product cloning and management:
+Product cloning and catalog helpers:
 
 ```typescript
 import {test, expect, variables} from '@componentk/shopware6-playwright-tools';
 
-test('Product operations', async ({productService}) => {
+test('Product operations', async ({productService, shopContextService}) => {
+    const productId = await productService.getProductIdByNumber('SWDEMO10005.2');
+    const variantId = await productService.getVariantBlueXlId();
+
     // Clone a product
     const clonedProductId = await productService.cloneProduct(variables.catalogProductMainId, {
         id: 'static-product-uuid',
@@ -207,7 +233,26 @@ test('Product operations', async ({productService}) => {
         productNumber: 'CLONED-001'
     });
 
+    // Test fixture product used by AdvCart flows
+    await productService.createGiftWrapProduct();
+    await productService.deleteGiftWrapProduct();
+
     // Cleanup is automatic after test
+});
+```
+
+#### ShopContextService
+
+Sales channel, shipping, payment, language lookups and store context:
+
+```typescript
+test('Shop context', async ({shopContextService}) => {
+    const salesChannelId = await shopContextService.getDefaultSalesChannelId();
+    const {standardId, expressId} = await shopContextService.getShippingMethodIds();
+    const {englishId} = await shopContextService.getLanguageIds();
+
+    await shopContextService.patchStoreContext(contextToken, {paymentMethodId});
+    await shopContextService.clearCache();
 });
 ```
 

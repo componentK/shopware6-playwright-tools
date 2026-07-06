@@ -1,4 +1,8 @@
-import {AdminApi, StorefrontApi, variables} from '../index.js';
+import {AdminApi} from '../commands/adminApi.js';
+import {StorefrontApi} from '../commands/storefrontApi.js';
+import variables from '../fixtures/variables.json'
+
+with {type: 'json'};
 import {expect} from '@playwright/test';
 import * as fs from 'fs';
 import {v4 as uuidv4} from 'uuid';
@@ -15,6 +19,13 @@ export interface CustomerRegistrationOptions {
     countryId?: string;
     documents?: Record<string, string>;
     guest?: boolean;
+    /** Guest cart token to merge into the new customer session on register */
+    guestContextToken?: string;
+}
+
+export interface CustomerLoginOptions {
+    /** Guest cart token to merge into the customer session on login */
+    guestContextToken?: string;
 }
 
 export interface CustomerRegistrationResult {
@@ -28,6 +39,7 @@ export class CustomerService {
     private readonly storefrontApi: StorefrontApi;
     private readonly baseUrl: string;
     private readonly cleanupCustomers: string[] = [];
+    private readonly cleanupCustomerGroups: string[] = [];
     private defaultSalutationId?: string;
     private defaultCountryId?: string;
 
@@ -95,6 +107,9 @@ export class CustomerService {
 
         const registerResponse = await this.storefrontApi.post('/account/register', undefined, {
             multipart,
+            headers: options.guestContextToken
+                ? {'sw-context-token': options.guestContextToken}
+                : undefined,
         });
 
         if (registerResponse.status() !== 200) {
@@ -168,12 +183,108 @@ export class CustomerService {
     }
 
     /**
+     * Fetch the logged-in customer profile via Store API
+     */
+    async getCustomerProfile(contextToken: string): Promise<Record<string, any>> {
+        const response = await this.storefrontApi.post('/account/customer', {}, {
+            headers: {'sw-context-token': contextToken},
+        });
+        expect(response.status()).toBe(200);
+        return response.json();
+    }
+
+    /**
+     * Fetch a customer entity via Admin API
+     */
+    async getCustomerAdmin(customerId: string): Promise<Record<string, any>> {
+        const response = await this.adminApi.get(`/customer/${customerId}`);
+        expect(response.status()).toBe(200);
+        const body = await response.json();
+        return body.data;
+    }
+
+    /**
+     * Log in the shared demo customer used across plugin test suites.
+     */
+    async loginMainCustomer(options: CustomerLoginOptions = {}): Promise<string> {
+        return this.loginCustomer(variables.userEmail, variables.userPass, options);
+    }
+
+    /**
+     * Reset the shared demo customer to a predictable baseline state
+     */
+    async resetMainCustomer(overwrites: Record<string, unknown> = {}): Promise<void> {
+        const response = await this.adminApi.patch(`/customer/${variables.customerMainId}`, {
+            affiliateCode: null,
+            campaignCode: null,
+            active: true,
+            groupId: variables.customerGrpDefaultId,
+            customFields: null,
+            ...overwrites,
+        });
+        expect(response.status()).toBe(204);
+    }
+
+    /**
+     * Remove all tags from the shared demo customer.
+     */
+    async clearMainCustomerTags(): Promise<void> {
+        const response = await this.adminApi.sync({
+            customer: {
+                entity: 'customer',
+                action: 'upsert',
+                payload: [{
+                    id: variables.customerMainId,
+                    tags: [],
+                }],
+            },
+        });
+        expect(response.status()).toBe(200);
+    }
+
+    /**
+     * Create a customer group and track it for cleanup
+     */
+    async createCustomerGroup(name: string, options: { id?: string; displayGross?: boolean } = {}): Promise<string> {
+        const groupId = (options.id ?? uuidv4()).replace(/-/g, '');
+        const response = await this.adminApi.post('/customer-group', {
+            id: groupId,
+            name,
+            displayGross: options.displayGross ?? false,
+        });
+        expect(response.status()).toBe(204);
+        this.cleanupCustomerGroups.push(groupId);
+        return groupId;
+    }
+
+    /**
+     * Delete a customer group by ID
+     */
+    async deleteCustomerGroup(groupId: string): Promise<void> {
+        await this.adminApi.del(`/customer-group/${groupId}`).catch(() => {
+            // ignore cleanup errors
+        });
+        const index = this.cleanupCustomerGroups.indexOf(groupId);
+        if (index > -1) {
+            this.cleanupCustomerGroups.splice(index, 1);
+        }
+    }
+
+    /**
      * Login a customer and get context token
      */
-    async loginCustomer(email: string, password: string = 'TestPassword123!'): Promise<string> {
+    async loginCustomer(
+        email: string,
+        password: string = 'TestPassword123!',
+        options: CustomerLoginOptions = {},
+    ): Promise<string> {
         const loginResponse = await this.storefrontApi.post('/account/login', {
             username: email,
-            password: password
+            password: password,
+        }, {
+            headers: options.guestContextToken
+                ? {'sw-context-token': options.guestContextToken}
+                : undefined,
         });
         expect(loginResponse.status()).toBe(200);
 
@@ -262,7 +373,11 @@ export class CustomerService {
      * Clean up all customers created during the test session
      */
     async cleanup(): Promise<void> {
-        // Clean up tracked customers
+        const groupIds = [...this.cleanupCustomerGroups];
+        for (const groupId of groupIds) {
+            await this.deleteCustomerGroup(groupId);
+        }
+
         const ids = [...this.cleanupCustomers];
         for (const customerId of ids) {
             await this.removeCustomer(customerId);

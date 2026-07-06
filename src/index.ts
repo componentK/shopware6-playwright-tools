@@ -30,13 +30,16 @@ export {EmailService} from './services/EmailService.js';
 export {ConfigService} from './services/ConfigService.js';
 export {ProductService} from './services/ProductService.js';
 export {SnippetService} from './services/SnippetService.js';
+export {ShopContextService} from './services/ShopContextService.js';
 
 // Types
 export type { TestFixtures, SalesChannel } from './fixtures/ui.js';
 export type { MyFixtures } from './fixtures/db.js';
 export type { AdminApiOptions } from './commands/adminApi.js';
 export type { StorefrontApiOptions } from './commands/storefrontApi.js';
-export type {CustomerRegistrationOptions, CustomerRegistrationResult} from './services/CustomerService.js';
+export type {
+    CustomerRegistrationOptions, CustomerRegistrationResult, CustomerLoginOptions
+} from './services/CustomerService.js';
 export type {CartLineItem} from './services/CartService.js';
 export type {OrderCreationOptions} from './services/OrderService.js';
 export type {FlowConfig, FlowSequence} from './services/FlowService.js';
