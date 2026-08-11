@@ -132,8 +132,41 @@ export class FlowService {
         return {...flow, sequences};
     }
 
-    static patchPromoId(flow: Record<string, unknown>, promoId: string): Record<string, unknown> {
-        return FlowService.patchProductIds(flow, {'__PROMO_ID__': promoId, '__PROMO2_ID__': promoId});
+    /**
+     * Patch add-promo action config. Fixed-type actions use `config.code` as the cart
+     * line referencedId — pass promoCode so suites do not keep the stale PROMO1 placeholder.
+     */
+    static patchPromoId(
+        flow: Record<string, unknown>,
+        promoId: string,
+        promoCode?: string,
+    ): Record<string, unknown> {
+        const withId = FlowService.patchProductIds(flow, {
+            __PROMO_ID__: promoId,
+            __PROMO2_ID__: promoId,
+        });
+        if (!promoCode) {
+            return withId;
+        }
+
+        const sequences = (withId.sequences as Array<Record<string, unknown>> | undefined)?.map((sequence) => {
+            if (sequence.actionName !== 'action.ckou.acaf.cart.add.promo') {
+                return sequence;
+            }
+            const config = sequence.config as Record<string, unknown> | undefined;
+            if (!config) {
+                return sequence;
+            }
+            return {
+                ...sequence,
+                config: {
+                    ...config,
+                    code: promoCode,
+                },
+            };
+        });
+
+        return {...withId, sequences};
     }
 
     static patchRulePromoId(rule: Record<string, unknown>, promoId: string): Record<string, unknown> {

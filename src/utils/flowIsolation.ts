@@ -1,5 +1,8 @@
 import type {FlowConfig, FlowSequence} from '../services/FlowService.js';
-import {v4 as uuidv4} from 'uuid';
+import {v4 as uuidv4, v5 as uuidv5} from 'uuid';
+
+/** Fixed namespace so suite-key → lastName hashes stay stable across runs. */
+const ISOLATION_NAMESPACE = 'a3f1c8e2-7b4d-4e9a-9c1f-2d6e8b0a5f31';
 
 export interface RuleConditionNode {
     id: string;
@@ -64,13 +67,18 @@ const ISOLATION_PREFIX = 'CkIso';
 /**
  * Deterministic customer lastName marker for parallel-safe flow suites.
  * Use a stable suite key (e.g. folder path or spec basename).
+ *
+ * Must stay unique across all suites: a plain truncate of long paths
+ * (e.g. `…/error-promo-excluded` vs `…/error-promo-not-eligible`) collided
+ * and let gated flows fire for the wrong worker.
  */
 export function isolationMarkerLastName(suiteKey: string): string {
+    const hash = uuidv5(suiteKey, ISOLATION_NAMESPACE).replace(/-/g, '').slice(0, 12);
     const normalized = suiteKey
         .replace(/[^a-zA-Z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '')
-        .slice(0, 40);
-    return `${ISOLATION_PREFIX}_${normalized}`;
+        .slice(0, 28);
+    return `${ISOLATION_PREFIX}_${normalized}_${hash}`;
 }
 
 function newId(): string {
@@ -138,14 +146,24 @@ export function buildCustomerEmailRule(options: BuildCustomerEmailRuleOptions): 
     return buildCustomerFieldRule(options, 'customerEmail', 'email');
 }
 
-function findDeepestAndContainer(conditions: RuleConditionNode[]): RuleConditionNode | undefined {
+/**
+ * AND container used for isolation merges: the outermost flow-level AND.
+ * Do NOT use the deepest AND — that often sits inside cartGoodsCount / line-item
+ * filters, so customerLastName would be evaluated as a line-item filter and leak.
+ */
+function findTopLevelAndContainer(conditions: RuleConditionNode[]): RuleConditionNode | undefined {
     for (const node of conditions) {
+        if (node.type === 'orContainer' && node.children?.length) {
+            const andChild = node.children.find((child) => child.type === 'andContainer');
+            if (andChild) {
+                return andChild;
+            }
+        }
         if (node.type === 'andContainer') {
-            const nested = node.children ? findDeepestAndContainer(node.children) : undefined;
-            return nested ?? node;
+            return node;
         }
         if (node.children?.length) {
-            const nested = findDeepestAndContainer(node.children);
+            const nested = findTopLevelAndContainer(node.children);
             if (nested) {
                 return nested;
             }
@@ -166,7 +184,7 @@ export function mergeCustomerLastNameIntoRule(
     options: MergeCustomerLastNameOptions,
 ): RuleConfig {
     const cloned = cloneRule(rule) as RuleConfig;
-    const andContainer = findDeepestAndContainer(cloned.conditions);
+    const andContainer = findTopLevelAndContainer(cloned.conditions);
     if (!andContainer) {
         throw new Error('mergeCustomerLastNameIntoRule: no andContainer found in rule conditions');
     }
@@ -196,7 +214,7 @@ export function mergeCustomerEmailIntoRule(
     options: MergeCustomerEmailOptions,
 ): RuleConfig {
     const cloned = cloneRule(rule) as RuleConfig;
-    const andContainer = findDeepestAndContainer(cloned.conditions);
+    const andContainer = findTopLevelAndContainer(cloned.conditions);
     if (!andContainer) {
         throw new Error('mergeCustomerEmailIntoRule: no andContainer found in rule conditions');
     }
@@ -218,17 +236,10 @@ export function mergeCustomerEmailIntoRule(
     return cloned;
 }
 
-function collectTopLevelActionSequences(sequences: FlowSequence[]): FlowSequence[] {
-    return sequences.filter((sequence) => sequence.actionName && !sequence.parentId);
-}
-
-function hasExistingRuleGate(sequences: FlowSequence[]): boolean {
-    return sequences.some((sequence) => sequence.ruleId && !sequence.parentId);
-}
-
 /**
- * Gate all top-level flow actions behind a Shopware IF sequence for the given rule.
- * Sequences that already belong to an existing top-level rule gate are left unchanged.
+ * Gate all top-level flow sequences behind a Shopware IF for the given rule.
+ * If the flow already has a top-level IF (product rule), it becomes the true-branch
+ * of this outer isolation gate (unless it is already gated by the same ruleId).
  */
 export function wrapFlowWithRuleGate(
     flow: FlowConfig | Record<string, unknown>,
@@ -237,16 +248,16 @@ export function wrapFlowWithRuleGate(
     const cloned = cloneRule(flow) as FlowConfig;
     const sequences = [...(cloned.sequences ?? [])];
 
-    if (hasExistingRuleGate(sequences)) {
+    if (sequences.some((sequence) => sequence.ruleId === options.ruleId && !sequence.parentId)) {
+        return cloned;
+    }
+
+    const rootSequences = sequences.filter((sequence) => !sequence.parentId);
+    if (rootSequences.length === 0) {
         return cloned;
     }
 
     const gateSequenceId = options.gateSequenceId ?? newId();
-    const topLevelActions = collectTopLevelActionSequences(sequences as FlowSequence[]);
-    if (topLevelActions.length === 0) {
-        return cloned;
-    }
-
     const gatedSequences: FlowSequence[] = [
         {
             id: gateSequenceId,
@@ -258,11 +269,12 @@ export function wrapFlowWithRuleGate(
     ];
 
     for (const sequence of sequences) {
-        if (sequence.actionName && !sequence.parentId) {
+        if (!sequence.parentId) {
             gatedSequences.push({
                 ...sequence,
                 parentId: gateSequenceId,
                 trueCase: true,
+                position: sequence.position ?? 1,
             });
             continue;
         }

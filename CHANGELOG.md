@@ -4,6 +4,10 @@
 
 - Added parallel-safe Flow Builder helpers: `isolationMarkerLastName`, `buildCustomerLastNameRule`,
   `buildCustomerEmailRule`, `mergeCustomerLastNameIntoRule`, `mergeCustomerEmailIntoRule`, `wrapFlowWithRuleGate`
+- `isolationMarkerLastName` appends a stable UUID v5 hash so long suite keys do not collide after truncation
+- `mergeCustomerLastNameIntoRule` / `mergeCustomerEmailIntoRule` target the **top-level** AND (not deepest
+  filter AND inside `cartGoodsCount`)
+- `wrapFlowWithRuleGate` wraps an outer isolation IF even when the flow already has a product-rule IF
 - Added `CartService.findLineItemMessageBySequenceId` and `CartService.findLineItemMessages`
 - Extended `CartService.createOrder` with optional `headers` and `query` parameters
 - Bumped `@playwright/test` to `1.62.1`

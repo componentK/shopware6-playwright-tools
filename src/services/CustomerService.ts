@@ -156,7 +156,7 @@ export class CustomerService {
         lastName?: string;
         email?: string;
         password?: string;
-    } = {}): Promise<string> {
+    } = {}, options: { trackForCleanup?: boolean } = {}): Promise<string> {
         const customerId = overwrites.id || this.generateCustomerId();
         const customerEmail = overwrites.email || `test.customer.${Date.now()}@example.com`;
         const password = overwrites.password || 'TestPassword123!';
@@ -175,7 +175,9 @@ export class CustomerService {
 
         expect(cloneResponse.status()).toBe(200);
 
-        this.cleanupCustomers.push(customerId);
+        if (options.trackForCleanup !== false) {
+            this.cleanupCustomers.push(customerId);
+        }
 
         return customerId;
     }
