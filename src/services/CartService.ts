@@ -43,6 +43,51 @@ export class CartService {
         return errors[`action-cart-message-${sequenceId}`] as Record<string, unknown> | undefined;
     }
 
+    static findLineItemMessageBySequenceId(
+        cart: { errors?: Record<string, unknown> | unknown[] },
+        sequenceId: string,
+        lineItemId?: string,
+    ): Record<string, unknown> | undefined {
+        const errors = cart.errors;
+        if (!errors) {
+            return undefined;
+        }
+
+        const keyPrefix = `action-line-item-message-${sequenceId}`;
+        const exactKey = lineItemId ? `${keyPrefix}-${lineItemId}` : undefined;
+
+        if (Array.isArray(errors)) {
+            return errors.find((error) => {
+                const key = String((error as Record<string, unknown>).key ?? '');
+                if (exactKey) {
+                    return key === exactKey;
+                }
+                return key.startsWith(keyPrefix);
+            }) as Record<string, unknown> | undefined;
+        }
+
+        if (exactKey && errors[exactKey]) {
+            return errors[exactKey] as Record<string, unknown>;
+        }
+
+        const matchKey = Object.keys(errors).find((key) =>
+            exactKey ? key === exactKey : key.startsWith(keyPrefix),
+        );
+        return matchKey ? (errors[matchKey] as Record<string, unknown>) : undefined;
+    }
+
+    static findLineItemMessages(
+        cart: { errors?: Record<string, unknown> | unknown[] },
+        lineItemId: string,
+    ): Record<string, unknown>[] {
+        return CartService.getErrors(cart).filter((error) => {
+            const record = error as Record<string, unknown>;
+            const key = String(record.key ?? '');
+            const params = record.parameters as { lineItemId?: string } | undefined;
+            return key.startsWith('action-line-item-message-') && params?.lineItemId === lineItemId;
+        }) as Record<string, unknown>[];
+    }
+
     /**
      * Create a new cart for guest
      *
@@ -144,11 +189,27 @@ export class CartService {
      *
      * @param contextToken - Context token for the cart session
      * @param documents - Optional documents to upload with the order (key-value pairs of document field names to file paths)
+     * @param options - Optional configuration
+     * @param options.headers - Additional headers to include (sw-context-token is always included)
+     * @param options.query - Query parameters to append to the URL (e.g., 'customParam=test')
      * @returns Order ID
      */
-    async createOrder(contextToken: string, documents?: Record<string, string>): Promise<string> {
+    async createOrder(
+        contextToken: string,
+        documents?: Record<string, string>,
+        options?: { headers?: Record<string, string>; query?: string },
+    ): Promise<string> {
+        const headers: Record<string, string> = {
+            'sw-context-token': contextToken,
+            ...(options?.headers || {}),
+        };
+
+        const url = options?.query
+            ? `/checkout/order${options.query.startsWith('?') ? options.query : `?${options.query}`}`
+            : '/checkout/order';
+
         const requestOptions: any = {
-            headers: {'sw-context-token': contextToken}
+            headers,
         };
 
         // If documents are provided, use multipart form data
@@ -160,7 +221,7 @@ export class CartService {
             requestOptions.multipart = multipart;
         }
 
-        const orderResponse = await this.storefrontApi.post('/checkout/order', {}, requestOptions);
+        const orderResponse = await this.storefrontApi.post(url, {}, requestOptions);
         expect(orderResponse.status()).toBe(200);
 
         const orderData = await orderResponse.json();

@@ -603,6 +603,55 @@ const adminLogin = new AdminLogin(page);
 const utility = new Utility(page);
 ```
 
+## Parallel-safe Flow Builder tests
+
+When multiple Playwright workers run API suites against one Shopware instance, **active flows are global**.
+Isolate each suite with:
+
+1. **Unique static IDs** for every flow, rule, and sequence (never reuse IDs across spec folders).
+2. **Customer-scoped gating** — register a disposable customer/guest with a unique `lastName`, build a
+   `customerLastName` rule, and gate flow actions behind that rule.
+3. **Do not** call `flowService.deactivateFlowsByEventName()` under multi-worker runs (it affects other suites).
+4. Reserve `singleWorker` folders for **system/plugin config** mutations only (not ordinary flow isolation).
+
+```typescript
+import {
+    test,
+    flowService,
+    customerService,
+    isolationMarkerLastName,
+    buildCustomerLastNameRule,
+    mergeCustomerLastNameIntoRule,
+    wrapFlowWithRuleGate,
+} from '@componentk/shopware6-playwright-tools';
+import flow from './flow.json';
+import productRule from './rule.json';
+
+const SUITE_KEY = 'api/my-event/my-action/my-case';
+const ISOLATION_RULE_ID = '0198aaaaaaaaaaaaaaaaaaaaaaaa';
+
+test.beforeAll(async ({flowService, customerService}) => {
+    const lastName = isolationMarkerLastName(SUITE_KEY);
+
+    if (productRule) {
+        await flowService.upsertRule(
+            mergeCustomerLastNameIntoRule(productRule, {lastName}),
+        );
+        await flowService.upsertFlow(flow);
+    } else {
+        await flowService.upsertRule(
+            buildCustomerLastNameRule({id: ISOLATION_RULE_ID, lastName}),
+        );
+        await flowService.upsertFlow(
+            wrapFlowWithRuleGate(flow, {ruleId: ISOLATION_RULE_ID}),
+        );
+    }
+
+    const {contextToken} = await customerService.registerCustomer({guest: true, lastName});
+    // ... run cart assertions with contextToken
+});
+```
+
 ## Testing Patterns
 
 ### API Testing Pattern

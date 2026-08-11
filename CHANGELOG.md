@@ -1,5 +1,14 @@
 ## Changelog
 
+### 1.8.0
+
+- Added parallel-safe Flow Builder helpers: `isolationMarkerLastName`, `buildCustomerLastNameRule`,
+  `buildCustomerEmailRule`, `mergeCustomerLastNameIntoRule`, `mergeCustomerEmailIntoRule`, `wrapFlowWithRuleGate`
+- Added `CartService.findLineItemMessageBySequenceId` and `CartService.findLineItemMessages`
+- Extended `CartService.createOrder` with optional `headers` and `query` parameters
+- Bumped `@playwright/test` to `1.62.1`
+- Documented parallel-safe flow testing patterns in README
+
 ### 1.7.0
 
 - Consolidated standalone test helpers into service classes for a single API surface

@@ -26,6 +26,14 @@ export {CartService} from './services/CartService.js';
 export {OrderService} from './services/OrderService.js';
 export {TagService} from './services/TagService.js';
 export {FlowService} from './services/FlowService.js';
+export {
+    isolationMarkerLastName,
+    buildCustomerLastNameRule,
+    buildCustomerEmailRule,
+    mergeCustomerLastNameIntoRule,
+    mergeCustomerEmailIntoRule,
+    wrapFlowWithRuleGate,
+} from './utils/flowIsolation.js';
 export {EmailService} from './services/EmailService.js';
 export {ConfigService} from './services/ConfigService.js';
 export {ProductService} from './services/ProductService.js';
@@ -43,4 +51,13 @@ export type {
 export type {CartLineItem} from './services/CartService.js';
 export type {OrderCreationOptions} from './services/OrderService.js';
 export type {FlowConfig, FlowSequence} from './services/FlowService.js';
+export type {
+    RuleConfig,
+    RuleConditionNode,
+    BuildCustomerLastNameRuleOptions,
+    BuildCustomerEmailRuleOptions,
+    WrapFlowWithRuleGateOptions,
+    MergeCustomerLastNameOptions,
+    MergeCustomerEmailOptions,
+} from './utils/flowIsolation.js';
 export type {SystemConfigEntry} from './services/ConfigService.js';
