@@ -8,6 +8,9 @@
 - `mergeCustomerLastNameIntoRule` / `mergeCustomerEmailIntoRule` target the **top-level** AND (not deepest
   filter AND inside `cartGoodsCount`)
 - `wrapFlowWithRuleGate` wraps an outer isolation IF even when the flow already has a product-rule IF
+- `SnippetService.createSnippet` upserts (patch existing) instead of delete+recreate to avoid parallel 500s
+- Hardened `AdminLogin.login` to wait for admin shell (not dashboard|banner URL) and skip form fill when already logged in
+- `Utility.closeBanner` also dismisses data-sharing consent and banner Close buttons that block admin UI under load
 - Added `CartService.findLineItemMessageBySequenceId` and `CartService.findLineItemMessages`
 - Extended `CartService.createOrder` with optional `headers` and `query` parameters
 - Bumped `@playwright/test` to `1.62.1`

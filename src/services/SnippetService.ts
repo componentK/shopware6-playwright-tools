@@ -33,9 +33,10 @@ export class SnippetService {
     }
 
     /**
-     * Create a snippet in the core snippet table for tests.
+     * Upsert a snippet in the core snippet table for tests.
      *
-     * Note: This operates on the core snippet entity, not app snippets.
+     * Prefer patching an existing translationKey+setId over delete+create — parallel workers
+     * otherwise race and Shopware returns 500 on duplicate keys.
      * When used from `beforeAll`, pass `{trackForCleanup: false}` and delete in `afterAll` —
      * the test-scoped fixture otherwise runs `cleanup()` when beforeAll finishes and wipes
      * snippets before later tests run.
@@ -63,7 +64,12 @@ export class SnippetService {
             const existingBody = await existing.json();
             const existingId: string | undefined = existingBody?.data?.[0]?.id;
             if (existingId) {
-                await this.deleteSnippet(existingId);
+                const patchResponse = await this.adminApi.patch(`/snippet/${existingId}`, {value, author});
+                expect([200, 204]).toContain(patchResponse.status());
+                if (options.trackForCleanup) {
+                    this.cleanupSnippetIds.push(existingId);
+                }
+                return existingId;
             }
         }
 

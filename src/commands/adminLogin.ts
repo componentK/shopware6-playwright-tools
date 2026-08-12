@@ -18,11 +18,22 @@ class AdminLogin {
   }
 
   async login(username: string = 'admin', password: string = 'shopware'): Promise<void> {
-    await this.usernameInput.fill(username);
-    await this.passwordInput.fill(password);
-    await this.submitButton.click();
-    // Wait for navigation to complete (either dashboard or banner)
-    await this.page.waitForURL(/.*dashboard|.*banner/, {timeout: 15000});
+    // Under parallel admin load the login form can take >5s to mount. Wait for either
+    // the form or an already-authenticated shell before deciding.
+    const loginForm = this.usernameInput;
+    const shell = this.page.locator('.sw-admin-menu, .sw-desktop').first();
+    await Promise.race([
+      loginForm.waitFor({state: 'visible', timeout: 30_000}),
+      shell.waitFor({state: 'visible', timeout: 30_000}),
+    ]);
+
+    if (await loginForm.isVisible().catch(() => false)) {
+      await loginForm.fill(username);
+      await this.passwordInput.fill(password);
+      await this.submitButton.click();
+    }
+
+    await shell.waitFor({state: 'visible', timeout: 30_000});
   }
 }
 

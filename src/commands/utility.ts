@@ -11,6 +11,14 @@ class Utility {
         const cancelButton = this.page.getByRole('banner').getByRole('button', {name: 'Cancel'});
         await cancelButton.click({timeout: 3000, force: true}).catch(() => {
         });
+        // Data-sharing consent on dashboard blocks hash routing / clicks under parallel load.
+        await this.page.getByRole('button', {name: 'Not at the moment'}).click({timeout: 2000, force: true}).catch(() => {
+        });
+        await this.page.getByRole('banner').getByRole('button', {name: 'Close'}).first().click({
+            timeout: 2000,
+            force: true,
+        }).catch(() => {
+        });
     }
 
     async closeDevToolbar(): Promise<void> {
