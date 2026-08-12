@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "ckou_playwright_tools",
+  "project_id": "d668fe5b-4fed-430d-996f-67893076aa4d"
+}
