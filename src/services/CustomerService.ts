@@ -53,9 +53,7 @@ export class CustomerService {
      * (e.g. the customer list unexpectedly showing only a subset of customers).
      */
     async resetCustomerGridFilters(): Promise<void> {
-        const response = await this.adminApi.patch('/_info/config-me', {
-            'grid.filter.customer': [],
-        });
+        const response = await this.adminApi.resetUserConfigKey('grid.filter.customer');
         expect(response.status()).toBe(204);
     }
 

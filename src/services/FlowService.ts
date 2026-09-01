@@ -33,6 +33,25 @@ export class FlowService {
     }
 
     /**
+     * Poll until flow active flag matches expected value.
+     */
+    async expectFlowActive(flowId: string, active: boolean, timeoutMs = 15_000): Promise<void> {
+        await expect.poll(async () => {
+            const response = await this.adminApi.get(`/flow/${flowId}`);
+            const body = await response.json() as { data: { active: boolean } };
+            return body.data.active;
+        }, {timeout: timeoutMs}).toBe(active);
+    }
+
+    /**
+     * Set a flow's active flag via Admin API.
+     */
+    async setFlowActive(flowId: string, active: boolean): Promise<void> {
+        const response = await this.adminApi.patch(`/flow/${flowId}`, {active});
+        expect([200, 204]).toContain(response.status());
+    }
+
+    /**
      * Replace an existing flow (delete + create). Does not track for automatic cleanup.
      */
     async upsertFlow(flowConfig: FlowConfig | Record<string, unknown>): Promise<string> {

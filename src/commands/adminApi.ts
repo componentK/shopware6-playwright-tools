@@ -128,6 +128,15 @@ class AdminApi {
     }
 
     /**
+     * Clears a persisted admin user-config key (grid filters, column settings, etc.).
+     */
+    async resetUserConfigKey(key: string): Promise<APIResponse> {
+        return this.patch('/_info/config-me', {
+            [key]: [],
+        });
+    }
+
+    /**
      * Creates a new AdminApi instance with different default credentials.
      * Useful for testing with restricted users.
      */

@@ -52,38 +52,25 @@ export class SnippetService {
             : {author: authorOrOptions.author ?? 'playwright-test', trackForCleanup: authorOrOptions.trackForCleanup !== false};
         const author = options.author;
         const snippetSetId = await this.getSnippetSetId(localeIso);
-
-        const existing = await this.adminApi.post('/search/snippet', {
-            filter: [
-                {type: 'equals', field: 'translationKey', value: translationKey},
-                {type: 'equals', field: 'setId', value: snippetSetId},
-            ],
-            limit: 1,
-        });
-        if (existing.status() === 200) {
-            const existingBody = await existing.json();
-            const existingId: string | undefined = existingBody?.data?.[0]?.id;
-            if (existingId) {
-                const patchResponse = await this.adminApi.patch(`/snippet/${existingId}`, {value, author});
-                expect([200, 204]).toContain(patchResponse.status());
-                if (options.trackForCleanup) {
-                    this.cleanupSnippetIds.push(existingId);
-                }
-                return existingId;
-            }
+        const existingId = await this.findSnippetId(translationKey, snippetSetId);
+        if (existingId) {
+            return this.patchExisting(existingId, value, author, options.trackForCleanup);
         }
 
         const snippetId = uuidv4().replace(/-/g, '');
-
-        const payload = {
+        const response = await this.adminApi.post('/snippet', {
             id: snippetId,
             translationKey,
             value,
             author,
             setId: snippetSetId,
-        };
-
-        const response = await this.adminApi.post('/snippet', payload);
+        });
+        if (![200, 204].includes(response.status())) {
+            const racedId = await this.findSnippetId(translationKey, snippetSetId);
+            if (racedId) {
+                return this.patchExisting(racedId, value, author, options.trackForCleanup);
+            }
+        }
         expect([200, 204]).toContain(response.status());
 
         if (options.trackForCleanup) {
@@ -91,6 +78,35 @@ export class SnippetService {
         }
 
         return snippetId;
+    }
+
+    private async patchExisting(
+        snippetId: string,
+        value: string,
+        author: string,
+        trackForCleanup: boolean,
+    ): Promise<string> {
+        const patchResponse = await this.adminApi.patch(`/snippet/${snippetId}`, {value, author});
+        expect([200, 204]).toContain(patchResponse.status());
+        if (trackForCleanup) {
+            this.cleanupSnippetIds.push(snippetId);
+        }
+        return snippetId;
+    }
+
+    private async findSnippetId(translationKey: string, snippetSetId: string): Promise<string | undefined> {
+        const existing = await this.adminApi.post('/search/snippet', {
+            filter: [
+                {type: 'equals', field: 'translationKey', value: translationKey},
+                {type: 'equals', field: 'setId', value: snippetSetId},
+            ],
+            limit: 1,
+        });
+        if (existing.status() !== 200) {
+            return undefined;
+        }
+        const existingBody = await existing.json();
+        return existingBody?.data?.[0]?.id;
     }
 
     async deleteSnippet(snippetId: string): Promise<void> {

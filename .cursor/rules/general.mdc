@@ -1,0 +1,40 @@
+---
+description: Conventions for @componentk/shopware6-playwright-tools — keep shared helpers plugin-agnostic
+alwaysApply: true
+---
+
+# Playwright-tools scope
+
+This package is shared across **all** ComponentK Shopware plugins. Do not bind helpers to one plugin.
+
+## Plugin-agnostic only
+
+- No plugin-specific store keys, snippet keys, test IDs, CSS classes, or route names in exported APIs.
+- No constants like `ckou.afu.*`, `ckou-vdocs-*`, or AFU/ACAF/VDOCS fixture names in services or `adminUi.ts`.
+- Generic flow/customer/cart helpers are fine; **plugin overrides** belong in that plugin's `tests/fixtures/`.
+
+## Where plugin-specific test code lives
+
+| Concern | Location |
+|---------|----------|
+| AFU flow list filter store key, sidebar assertions | `CKOUAdvFlowUtility/tests/fixtures/flowList.ts` |
+| VDOCS customer tab navigation | VDOCS plugin fixtures (or generic customer helpers here) |
+| Shared admin hash nav, flow row locator, `gotoFlowIndexReady` | playwright-tools `adminUi.ts` |
+
+## Extract vs keep local
+
+Extract to playwright-tools when **two or more plugins** need the same pattern and it stays generic (e.g. `gotoFlowIndexReady`, `flowListRow`, `AdminApi.resetUserConfigKey`).
+
+Keep in the plugin when the helper references plugin UI overrides, test IDs, or config keys.
+
+## Debugging / verification runs
+
+When fixing one spec or feature, run **only that file or test name** — not the full `@single-worker` or `@admin` project:
+
+```bash
+cd custom/plugins/<Plugin>/tests
+pnpm exec playwright test -c playwright.config.ts --project chromium path/to/spec.ts --workers 1
+pnpm exec playwright test -c playwright.config.ts --grep "exact test title" --workers 1
+```
+
+Rebuild admin JS only when administration sources changed; then rerun the targeted spec.

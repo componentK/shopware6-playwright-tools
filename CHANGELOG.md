@@ -1,5 +1,16 @@
 ## Changelog
 
+### 1.9.0
+
+- Added shared admin UI helpers in `adminUi.ts`: `expectAdministrationShell`, `gotoAdminHash`,
+  `gotoCustomerDetailBase`, `gotoCustomerDocumentsTab`, `gotoCustomerIndexReady`,
+  `gotoCustomerIndexWithDemoCustomer`, `gotoFlowIndexReady`, `gotoRolePermissionsGeneralTab`,
+  `flowListRow`, `waitForCustomerListRow`
+- Added `AdminApi.resetUserConfigKey` for clearing persisted grid filters / column settings
+- `CustomerService.resetCustomerGridFilters` uses `resetUserConfigKey`
+- Added `FlowService.expectFlowActive` and `FlowService.setFlowActive`
+- `SnippetService.createSnippet` handles create races by patching an existing snippet when POST fails
+
 ### 1.8.0
 
 - Added parallel-safe Flow Builder helpers: `isolationMarkerLastName`, `buildCustomerLastNameRule`,
