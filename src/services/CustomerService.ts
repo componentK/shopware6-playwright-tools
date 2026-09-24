@@ -171,7 +171,22 @@ export class CustomerService {
             cloneChildren: false
         });
 
-        expect(cloneResponse.status()).toBe(200);
+        expect(
+            cloneResponse.status(),
+            `clone customer failed: ${await cloneResponse.text()}`
+        ).toBe(200);
+
+        // Shopware 6.6 requires default_payment_method_id; clone should copy it, but repair if missing.
+        const created = await this.getCustomerAdmin(customerId);
+        if (!created.defaultPaymentMethodId) {
+            const main = await this.getCustomerAdmin(variables.customerMainId);
+            if (main.defaultPaymentMethodId) {
+                const patch = await this.adminApi.patch(`/customer/${customerId}`, {
+                    defaultPaymentMethodId: main.defaultPaymentMethodId,
+                });
+                expect(patch.status(), `payment method patch failed: ${await patch.text()}`).toBe(204);
+            }
+        }
 
         if (options.trackForCleanup !== false) {
             this.cleanupCustomers.push(customerId);

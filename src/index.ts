@@ -35,6 +35,12 @@ export {
     wrapFlowWithRuleGate,
 } from './utils/flowIsolation.js';
 export {
+    fetchShopwareCoreVersion,
+    isAtLeast,
+    isShopwareAtLeast,
+    resetShopwareVersionCache,
+} from './utils/shopwareVersion.js';
+export {
     expectAdministrationShell,
     gotoAdminHash,
     gotoCustomerDetailBase,
