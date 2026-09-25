@@ -54,7 +54,8 @@ export class CustomerService {
      */
     async resetCustomerGridFilters(): Promise<void> {
         const response = await this.adminApi.resetUserConfigKey('grid.filter.customer');
-        expect(response.status()).toBe(204);
+        // POST upsert returns 200; some versions may return 204
+        expect([200, 204]).toContain(response.status());
     }
 
     /**

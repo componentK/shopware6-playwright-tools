@@ -185,10 +185,46 @@ export async function gotoCustomerDocumentsTab(page: Page, customerId: string): 
 export async function gotoRolePermissionsGeneralTab(page: Page, roleId: string): Promise<void> {
     const id = roleId.toLowerCase();
     await bootAdminDesktop(page);
-    await shopwareApplicationRouterPush(page, {name: 'sw.users.permissions.role.detail.general', params: {id}});
-    await page.waitForURL((url) => url.hash.includes(`/role.detail/${id}/general`), {timeout: ADMIN_NAV_TIMEOUT});
-    await expect(page.locator('div.sw-page.sw-users-permissions-role-detail')).toBeVisible({timeout: ADMIN_VIEW_TIMEOUT});
-    await expect(page.locator('.sw-users-permissions-role-view-general')).toBeVisible({timeout: ADMIN_VIEW_TIMEOUT});
+    // Prefer hash path with id in the URL — router.push({name, params}) can leave params empty on 6.6.
+    await gotoAdminHash(page, `/sw/users/permissions/role.detail/${id}/general`);
+    await page.waitForURL((url) => url.hash.includes(`/role.detail/${id}`), {timeout: ADMIN_NAV_TIMEOUT});
+    // If hash cold-load left an empty role shell, recover via named route push.
+    const titlePending = await page
+        .locator('.sw-page.sw-users-permissions-role-detail h2')
+        .evaluate((el) => (el.textContent || '').trim() === 'Role')
+        .catch(() => true);
+    if (titlePending) {
+        await shopwareApplicationRouterPush(page, {
+            name: 'sw.users.permissions.role.detail.general',
+            params: {id},
+        });
+        await page.waitForURL((url) => url.hash.includes(`/role.detail/${id}/general`), {
+            timeout: ADMIN_NAV_TIMEOUT,
+        });
+    }
+    await expect(page.locator('div.sw-page.sw-users-permissions-role-detail')).toBeVisible({
+        timeout: ADMIN_VIEW_TIMEOUT,
+    });
+    const generalTab = page.getByRole('tab', {name: 'General'});
+    if (await generalTab.count()) {
+        await generalTab.click();
+    }
+    await page.waitForURL((url) => url.hash.includes(`/role.detail/${id}/general`), {
+        timeout: ADMIN_NAV_TIMEOUT,
+    });
+    // Role entity loaded (generic "Role" title means params/id or GET failed)
+    await expect
+        .poll(async () => {
+            const title = (await page.locator('.sw-page.sw-users-permissions-role-detail h2').textContent())?.trim();
+            return title && title !== 'Role' ? 'loaded' : 'pending';
+        }, {timeout: ADMIN_VIEW_TIMEOUT, message: 'Expected role detail to load role entity'})
+        .toBe('loaded');
+    await expect(page.locator('.sw-users-permissions-role-view-general')).toBeVisible({
+        timeout: ADMIN_VIEW_TIMEOUT,
+    });
+    await expect(
+        page.locator('.sw-users-permissions-role-view-general .sw-users-permissions-permissions-grid').first(),
+    ).toBeVisible({timeout: ADMIN_VIEW_TIMEOUT});
 }
 
 /** Poll until a freshly created customer row appears (indexing / grid refresh lag in CI). */
