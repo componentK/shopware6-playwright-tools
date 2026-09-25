@@ -1,5 +1,14 @@
 ## Changelog
 
+### 1.10.0
+
+- Added Shopware version helpers: `fetchShopwareCoreVersion`, `isAtLeast`, `isShopwareAtLeast`, `resetShopwareVersionCache`
+- Changed `AdminApi.resetUserConfigKey` to POST `/_info/config-me` (Shopware 6.6 returns 405 for PATCH)
+- `CustomerService.resetCustomerGridFilters` accepts HTTP 200 or 204
+- Changed `gotoRolePermissionsGeneralTab` to open the role by hash and wait until the role entity loads (named-route params can be empty on 6.6)
+- `CustomerService` clone repairs a missing `defaultPaymentMethodId` on Shopware 6.6
+- Added `prepare` so a git install compiles `dist/`
+
 ### 1.9.0
 
 - Added shared admin UI helpers in `adminUi.ts`: `expectAdministrationShell`, `gotoAdminHash`,
