@@ -1,12 +1,13 @@
 {
   "name": "@componentk/shopware6-playwright-tools",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Playwright testing utilities for Shopware 6 plugins with API testing, admin automation",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "prepare": "npm run build",
     "uuid:generate": "node .cursor/uuid-generator.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepublishOnly": "npm run build"

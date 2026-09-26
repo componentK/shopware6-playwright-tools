@@ -129,9 +129,10 @@ class AdminApi {
 
     /**
      * Clears a persisted admin user-config key (grid filters, column settings, etc.).
+     * Shopware 6.6+ uses POST upsert on `/_info/config-me` (PATCH is 405).
      */
     async resetUserConfigKey(key: string): Promise<APIResponse> {
-        return this.patch('/_info/config-me', {
+        return this.post('/_info/config-me', {
             [key]: [],
         });
     }
