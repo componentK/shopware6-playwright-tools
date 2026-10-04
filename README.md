@@ -468,6 +468,30 @@ test('Utility functions', async ({ page, utility }) => {
 });
 ```
 
+### Rule Builder helpers (`ruleBuilder.ts`)
+
+Shared Administration Rule Builder flows (dockware-safe overlays, Type → Flow Builder, condition select):
+
+```typescript
+import {
+  openRuleCreate,
+  fillRuleBasics,
+  selectConditionByLabel,
+  saveRuleExpectSuccess,
+  deleteRule,
+} from '@componentk/shopware6-playwright-tools';
+
+test('create rule', async ({ page, adminApi }) => {
+  await openRuleCreate(page);
+  await fillRuleBasics(page, 'My rule');
+  await selectConditionByLabel(page, 'Always valid');
+  const ruleId = await saveRuleExpectSuccess(page);
+  await deleteRule(adminApi, ruleId);
+});
+```
+
+Keep plugin-specific selectors (custom field ids, branded groups) in the plugin test helpers.
+
 ## Test Fixtures
 
 The package provides several test fixtures that extend Playwright's base test:

@@ -52,6 +52,19 @@ export {
     flowListRow,
     waitForCustomerListRow,
 } from './utils/adminUi.js';
+export {
+    neutralizeAdminOverlays,
+    openRuleCreate,
+    fillRuleBasics,
+    openConditionTypeSelect,
+    selectConditionByLabel,
+    selectOperator,
+    selectProductInCondition,
+    saveRuleExpectSuccess,
+    deleteRule,
+    deleteRulesByName,
+} from './utils/ruleBuilder.js';
+export type {FillRuleBasicsOptions} from './utils/ruleBuilder.js';
 export {EmailService} from './services/EmailService.js';
 export {ConfigService} from './services/ConfigService.js';
 export {ProductService} from './services/ProductService.js';
