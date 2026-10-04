@@ -1,5 +1,13 @@
 ## Changelog
 
+### 1.11.0
+
+- Added Rule Builder admin helpers in `ruleBuilder.ts`: `neutralizeAdminOverlays`, `openRuleCreate`,
+  `fillRuleBasics`, `openConditionTypeSelect`, `selectConditionByLabel`, `selectOperator`,
+  `selectProductInCondition`, `saveRuleExpectSuccess`, `deleteRule`, `deleteRulesByName`
+- Hardened dockware admin interactions: Symfony toolbar pointer-events off, leave-guard dismiss,
+  Type → Flow Builder scoped to select results (not Automation nav), condition select scroll/retry
+
 ### 1.10.0
 
 - Added Shopware version helpers: `fetchShopwareCoreVersion`, `isAtLeast`, `isShopwareAtLeast`, `resetShopwareVersionCache`
