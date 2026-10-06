@@ -1,29 +1,8 @@
 import {expect, type Page} from '@playwright/test';
 import {gotoAdminHash} from './adminUi.js';
+import {neutralizeAdminOverlays} from './adminOverlays.js';
 
-/**
- * Dockware/dev admin often keeps the Symfony profiler bar; it intercepts clicks on rule fields.
- * Also dismisses Shopware's leave-guard modal when Escape/hash churn raised it.
- */
-export async function neutralizeAdminOverlays(page: Page): Promise<void> {
-    await page
-        .addStyleTag({
-            content: [
-                '.sf-toolbar, .sf-minitoolbar, .sf-toolbarreset { pointer-events: none !important; opacity: 0 !important; }',
-                '.sw-notifications { pointer-events: none !important; }',
-            ].join(' '),
-        })
-        .catch(() => undefined);
-
-    const discard = page.getByRole('button', {name: /^Discard changes$/});
-    if (await discard.isVisible().catch(() => false)) {
-        await discard.click().catch(() => undefined);
-    }
-    const keep = page.getByRole('button', {name: /^Keep editing$/});
-    if (await keep.isVisible().catch(() => false)) {
-        await keep.click().catch(() => undefined);
-    }
-}
+export {neutralizeAdminOverlays} from './adminOverlays.js';
 
 /** Open Rule Builder create view and wait for the condition tree. */
 export async function openRuleCreate(page: Page): Promise<void> {
@@ -159,12 +138,31 @@ export async function selectProductInCondition(page: Page, productName: string):
         .locator('.sw-condition-tree .sw-entity-multi-id-select, .sw-condition-tree .sw-entity-multi-select')
         .first();
     await expect(entitySelect).toBeVisible({timeout: 10000});
-    await entitySelect.click();
+    await neutralizeAdminOverlays(page);
+
+    // Results render only while sw-select-base is expanded (`v-if="expanded"`).
+    const selection = entitySelect.locator('.sw-select__selection').first();
+    await selection.click();
+    await expect(selection).toHaveAttribute('aria-expanded', 'true', {timeout: 5000});
+
+    const results = page.locator('.sw-select-result-list-popover-wrapper .sw-select-result-list__content').last();
+    await expect(results).toBeVisible({timeout: 15000});
+
     const input = entitySelect.locator('input').first();
-    await input.fill(productName);
-    const results = page.locator('.sw-select-result-list__content').last();
-    await expect(results.locator('li').filter({hasText: productName}).first()).toBeVisible({timeout: 15000});
-    await results.locator('li').filter({hasText: productName}).first().click();
+    await input.click();
+    // Shopware sw-select search is driven by @input — prefer real keystrokes over fill().
+    await input.fill('');
+    await input.pressSequentially(productName, {delay: 25});
+    await expect(selection).toHaveAttribute('aria-expanded', 'true');
+
+    // Match via product-name node (li text also includes product number). Highlight
+    // spans make bare getByText(exact) match every "Main product…" row.
+    const escaped = productName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const nameNode = results
+        .locator('.sw-product-variant-info__product-name')
+        .filter({hasText: new RegExp(`^${escaped}$`)});
+    await expect(nameNode).toHaveCount(1, {timeout: 15000});
+    await nameNode.click();
 }
 
 /** Click Save and assert a successful rule create/update API response; returns rule id. */
