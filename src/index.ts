@@ -53,7 +53,19 @@ export {
     waitForCustomerListRow,
 } from './utils/adminUi.js';
 export {
+    UI_SHELL_UPDATE_2026_SEEN_CONFIG_KEY,
     neutralizeAdminOverlays,
+    customerDetailEditButton,
+    customerListBulkEditAction,
+} from './utils/adminOverlays.js';
+export {createAclUser} from './utils/aclUser.js';
+export type {AclUserPayload, CreateAclUserOptions} from './utils/aclUser.js';
+export {
+    getEnglishLocaleId,
+    getLocaleIdByCode,
+    getLocaleIdByLanguageName,
+} from './utils/locale.js';
+export {
     openRuleCreate,
     fillRuleBasics,
     openConditionTypeSelect,

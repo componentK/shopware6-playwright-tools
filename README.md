@@ -468,6 +468,32 @@ test('Utility functions', async ({ page, utility }) => {
 });
 ```
 
+### Admin overlays (`adminOverlays.ts`)
+
+The 6.7.15+ “A new look for your Administration” dialog is prevented by seeding user config
+`core.uiShellUpdate2026ModalSeen` = `{ seen: true }` via `AdminApi.markUiShellUpdate2026Seen()`.
+Call it **once** from the plugin Playwright `global.setup` (default admin). For ACL users use
+`createAclUser` (seeds the flag after create). Do not call on every login or `adminApi` fixture.
+
+`neutralizeAdminOverlays` only disables the Symfony profiler bar and dismisses leave-guard dialogs
+(used by Rule Builder helpers).
+
+```typescript
+import {
+  createAclUser,
+  customerDetailEditButton,
+  customerListBulkEditAction,
+  getEnglishLocaleId,
+  getLocaleIdByCode,
+} from '@componentk/shopware6-playwright-tools';
+
+await adminApi.markUiShellUpdate2026Seen(); // e.g. in global.setup (default admin)
+const localeId = await getEnglishLocaleId(adminApi); // or getLocaleIdByCode(adminApi, 'de-DE')
+await createAclUser(adminApi, {...userPayload, localeId}); // ACL user + seed seen flag once
+await customerDetailEditButton(page).click();
+await customerListBulkEditAction(page).click();
+```
+
 ### Rule Builder helpers (`ruleBuilder.ts`)
 
 Shared Administration Rule Builder flows (dockware-safe overlays, Type → Flow Builder, condition select):

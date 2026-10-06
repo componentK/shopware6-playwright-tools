@@ -1,5 +1,6 @@
 import type {APIRequestContext, APIResponse} from '@playwright/test';
 import variables from '../fixtures/variables.json' with {type: "json"};
+import {UI_SHELL_UPDATE_2026_SEEN_CONFIG_KEY} from '../utils/adminOverlays.js';
 
 export type OAuthScope = 'admin' | 'user-verified' | 'write' | 'read' | string;
 
@@ -134,6 +135,21 @@ class AdminApi {
     async resetUserConfigKey(key: string): Promise<APIResponse> {
         return this.post('/_info/config-me', {
             [key]: [],
+        });
+    }
+
+    /**
+     * Marks the Shopware 6.7.15+ “A new look for your Administration” dialog as already seen
+     * for the current OAuth user (`core.uiShellUpdate2026ModalSeen` = `{ seen: true }`).
+     *
+     * Call once from plugin `global.setup` (default admin) and after creating ACL admin users —
+     * do not invoke on every login / adminApi fixture setup.
+     *
+     * Harmless on older Shopware: `/_info/config-me` stores any key; the modal simply does not exist.
+     */
+    async markUiShellUpdate2026Seen(): Promise<APIResponse> {
+        return this.post('/_info/config-me', {
+            [UI_SHELL_UPDATE_2026_SEEN_CONFIG_KEY]: {seen: true},
         });
     }
 

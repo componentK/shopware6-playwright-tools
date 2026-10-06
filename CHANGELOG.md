@@ -1,5 +1,19 @@
 ## Changelog
 
+### 1.12.0
+
+- Added `AdminApi.markUiShellUpdate2026Seen()` for `core.uiShellUpdate2026ModalSeen` = `{ seen: true }`
+  (call once from plugin `global.setup` — not on every login or adminApi fixture)
+- Added `createAclUser(adminApi, payload)` — POST `/user` with user-verified scope and seed the UI-shell
+  seen flag for that user once
+- Added locale helpers `getEnglishLocaleId`, `getLocaleIdByLanguageName`, `getLocaleIdByCode` for admin
+  user payloads
+- `selectProductInCondition` types via `pressSequentially` (Shopware `@input` search) and matches the
+  exact product label — fixes empty result lists on 6.7.15+
+- `neutralizeAdminOverlays` stays for Symfony toolbar / leave-guard only (Rule Builder helpers)
+- Added scoped locators `customerDetailEditButton` and `customerListBulkEditAction` so Edit / Bulk edit
+  clicks do not hit the admin user-menu (accessible names contain “Edit(or)” / “Bulk Edit”)
+
 ### 1.11.0
 
 - Added Rule Builder admin helpers in `ruleBuilder.ts`: `neutralizeAdminOverlays`, `openRuleCreate`,
