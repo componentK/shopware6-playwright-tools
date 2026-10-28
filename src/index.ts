@@ -92,7 +92,7 @@ export type {
     CustomerRegistrationOptions, CustomerRegistrationResult, CustomerLoginOptions
 } from './services/CustomerService.js';
 export type {CartLineItem} from './services/CartService.js';
-export type {OrderCreationOptions} from './services/OrderService.js';
+export type {OrderCreationOptions, CreatedOrder} from './services/OrderService.js';
 export type {FlowConfig, FlowSequence} from './services/FlowService.js';
 export type {
     RuleConfig,

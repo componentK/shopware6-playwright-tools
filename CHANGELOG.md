@@ -1,5 +1,11 @@
 ## Changelog
 
+### 1.13.0
+
+- `OrderService.createOrder` creates an order through the Admin API for an existing customer (one product line, one or more deliveries, empty tracking codes) and returns the order id, order number, and delivery ids
+- `OrderService.updateOrderDeliveryTrackingCodes` replaces a delivery's tracking codes
+- `orderService` fixture deletes orders created during the test
+
 ### 1.12.0
 
 - Added `AdminApi.markUiShellUpdate2026Seen()` for `core.uiShellUpdate2026ModalSeen` = `{ seen: true }`

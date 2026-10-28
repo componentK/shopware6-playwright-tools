@@ -106,6 +106,7 @@ const test = base.extend<TestFixtures, SalesChannel>({
     orderService: async ({adminApi}, use) => {
         const orderService = new OrderService(adminApi)
         await use(orderService)
+        await orderService.cleanup()
     },
 
     tagService: async ({adminApi}, use) => {
